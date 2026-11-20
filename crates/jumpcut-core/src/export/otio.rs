@@ -32,6 +32,11 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
     let name = format!("{} - {PRODUCT_NAME}", context.source_name());
     let source_duration = context.frames(context.analysis.plan.source_duration);
 
+    // The OTIO serialized schema puts media references in a keyed map on
+    // Clip.2 (`media_references` + `active_media_reference_key`); the singular
+    // `media_reference` field belongs to the older Clip.1 schema. Tracks and
+    // stacks also carry the schema's effect/marker/metadata fields, and each
+    // track declares its `kind`.
     let mut video = Vec::new();
     let mut audio = Vec::new();
     for clip in context.clips() {
@@ -39,36 +44,59 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
         let start = rational_time(context.frames(clip.source_start), rate);
         let duration = rational_time(context.frames(clip.record_duration()), rate);
         let source_length = rational_time(source_duration, rate);
-        let mut item = json!({
+        let mut effects = Vec::new();
+        if let Some(speed) = clip.speed {
+            effects.push(json!({
+                "OTIO_SCHEMA": "LinearTimeWarp.1",
+                "name": "jumpcut silent speed",
+                "effect_name": "LinearTimeWarp",
+                "enabled": true,
+                "metadata": {},
+                "time_scalar": speed,
+            }));
+        }
+        let item = json!({
             "OTIO_SCHEMA": "Clip.2",
             "name": clip_name,
+            "metadata": {},
+            "effects": effects,
+            "markers": [],
             "source_range": {
                 "OTIO_SCHEMA": "TimeRange.1",
                 "start_time": start,
                 "duration": duration,
             },
-            "media_reference": {
-                "OTIO_SCHEMA": "ExternalReference.1",
-                "name": context.source_name(),
-                "target_url": file_url(context.source),
-                "available_range": {
-                    "OTIO_SCHEMA": "TimeRange.1",
-                    "start_time": rational_time(0, rate),
-                    "duration": source_length,
+            "media_references": {
+                "DEFAULT_MEDIA": {
+                    "OTIO_SCHEMA": "ExternalReference.1",
+                    "name": context.source_name(),
+                    "target_url": file_url(context.source),
+                    "available_range": {
+                        "OTIO_SCHEMA": "TimeRange.1",
+                        "start_time": rational_time(0, rate),
+                        "duration": source_length,
+                    },
+                    "metadata": {},
                 },
             },
+            "active_media_reference_key": "DEFAULT_MEDIA",
         });
-        if let Some(speed) = clip.speed {
-            item["effects"] = json!([{
-                "OTIO_SCHEMA": "LinearTimeWarp.1",
-                "name": "jumpcut silent speed",
-                "time_scalar": speed,
-            }]);
-        }
         video.push(item.clone());
         audio.push(item);
     }
 
+    let track = |name: &str, kind: &str, children: Vec<Value>| {
+        json!({
+            "OTIO_SCHEMA": "Track.1",
+            "name": name,
+            "kind": kind,
+            "children": children,
+            "effects": [],
+            "markers": [],
+            "metadata": {},
+            "source_range": Value::Null,
+        })
+    };
     let timeline = json!({
         "OTIO_SCHEMA": "Timeline.1",
         "name": name,
@@ -78,17 +106,13 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
             "OTIO_SCHEMA": "Stack.1",
             "name": "Tracks",
             "children": [
-                {
-                    "OTIO_SCHEMA": "Track.1",
-                    "name": "Video",
-                    "children": video,
-                },
-                {
-                    "OTIO_SCHEMA": "Track.1",
-                    "name": "Audio",
-                    "children": audio,
-                },
+                track("Video", "Video", video),
+                track("Audio", "Audio", audio),
             ],
+            "effects": [],
+            "markers": [],
+            "metadata": {},
+            "source_range": Value::Null,
         },
     });
     Ok(format!("{}\n", serde_json::to_string_pretty(&timeline)?))
@@ -125,8 +149,10 @@ mod tests {
         assert_eq!(tracks[0]["name"], "Video");
         assert_eq!(tracks[1]["name"], "Audio");
         assert_eq!(tracks[0]["children"].as_array().unwrap().len(), 3);
+        // Official Clip.2 schema (OTIO serialized-data docs) uses the keyed
+        // `media_references` map; `media_reference` was the Clip.1 field.
         assert_eq!(
-            tracks[0]["children"][0]["media_reference"]["target_url"],
+            tracks[0]["children"][0]["media_references"]["DEFAULT_MEDIA"]["target_url"],
             "file:///media/input.mp4"
         );
         assert_eq!(

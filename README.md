@@ -191,6 +191,9 @@ jumpcut input.mp4 --export json -o cut.json
 
 # Machine-readable full analysis (per-frame loudness, thresholds, plan).
 jumpcut input.mp4 --auto --json > analysis.json
+
+# Compact analysis: exact durations and segments without per-frame samples.
+jumpcut input.mp4 --auto --json --compact > analysis-summary.json
 ```
 
 ## Tuning

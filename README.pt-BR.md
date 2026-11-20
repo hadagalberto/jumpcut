@@ -194,6 +194,9 @@ jumpcut input.mp4 --export json -o corte.json
 
 # Análise completa em JSON (loudness por frame, limiares e plano).
 jumpcut input.mp4 --auto --json > analise.json
+
+# Análise compacta: durações e segmentos exatos, sem amostras por frame.
+jumpcut input.mp4 --auto --json --compact > analise-resumo.json
 ```
 
 ## Ajustes (tuning)

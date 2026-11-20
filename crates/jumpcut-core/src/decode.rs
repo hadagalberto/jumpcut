@@ -94,6 +94,8 @@ pub struct PcmDecoder {
     stderr_thread: Option<JoinHandle<String>>,
     options: DecodeOptions,
     finished: bool,
+    /// Raw PCM scratch space, reused across every `read_chunk_into` call.
+    byte_buffer: Vec<u8>,
 }
 
 impl PcmDecoder {
@@ -165,6 +167,7 @@ impl PcmDecoder {
             stderr_thread: Some(stderr_thread),
             options,
             finished: false,
+            byte_buffer: Vec::new(),
         })
     }
 
@@ -189,20 +192,46 @@ impl PcmDecoder {
     /// [`DecodeError::TruncatedPcm`] on a partial sample, or
     /// [`DecodeError::AlreadyFinished`] if the decoder was consumed.
     pub fn read_chunk(&mut self, max_samples: usize) -> Result<Vec<f32>, DecodeError> {
+        let mut samples = Vec::new();
+        self.read_chunk_into(max_samples, &mut samples)?;
+        Ok(samples)
+    }
+
+    /// Reads up to `max_samples` floats into `out`, reusing both the decoder's
+    /// raw byte scratch space and the caller's vector allocation.
+    ///
+    /// `out` is cleared before the read, so repeated calls keep its capacity
+    /// (and heap address) stable while only its length changes.
+    ///
+    /// # Errors
+    ///
+    /// Returns the same errors as [`Self::read_chunk`].
+    pub fn read_chunk_into(
+        &mut self,
+        max_samples: usize,
+        out: &mut Vec<f32>,
+    ) -> Result<(), DecodeError> {
         if self.finished {
             return Err(DecodeError::AlreadyFinished);
         }
         if max_samples == 0 {
-            return Ok(Vec::new());
+            out.clear();
+            return Ok(());
         }
         let capacity = max_samples
             .checked_mul(4)
             .ok_or(DecodeError::ChunkTooLarge)?;
-        let reader = self.stdout.as_mut().ok_or(DecodeError::AlreadyFinished)?;
-        let mut bytes = vec![0_u8; capacity];
+        let Self {
+            stdout,
+            byte_buffer,
+            ..
+        } = self;
+        let reader = stdout.as_mut().ok_or(DecodeError::AlreadyFinished)?;
+        byte_buffer.clear();
+        byte_buffer.resize(capacity, 0);
         let mut filled = 0;
         while filled < capacity {
-            let read = reader.read(&mut bytes[filled..])?;
+            let read = reader.read(&mut byte_buffer[filled..])?;
             if read == 0 {
                 break;
             }
@@ -211,10 +240,14 @@ impl PcmDecoder {
         if filled % 4 != 0 {
             return Err(DecodeError::TruncatedPcm);
         }
-        Ok(bytes[..filled]
-            .chunks_exact(4)
-            .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
-            .collect())
+        out.clear();
+        out.reserve(filled / 4);
+        out.extend(
+            byte_buffer[..filled]
+                .chunks_exact(4)
+                .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]])),
+        );
+        Ok(())
     }
 
     /// Closes the pipe, waits for ffmpeg and verifies a successful exit.
@@ -253,8 +286,9 @@ impl PcmDecoder {
     /// Propagates any [`DecodeError`] from reading or from the child process.
     pub fn read_all(mut self) -> Result<Vec<f32>, DecodeError> {
         let mut samples = Vec::new();
+        let mut chunk = Vec::new();
         loop {
-            let chunk = self.read_chunk(8_192)?;
+            self.read_chunk_into(8_192, &mut chunk)?;
             if chunk.is_empty() {
                 break;
             }
@@ -412,6 +446,36 @@ mod tests {
         decoder.finish().unwrap();
         assert!(chunks > 10, "expected true streaming, got {chunks} chunks");
         assert!(total.abs_diff(8_000) <= 32, "decoded {total} samples");
+    }
+
+    #[test]
+    fn read_chunk_into_reuses_the_output_buffer() {
+        if !ffmpeg_available() {
+            eprintln!("skipping buffer reuse test: ffmpeg not installed");
+            return;
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let wav = make_wav(directory.path(), 0.5);
+        let mut decoder = PcmDecoder::spawn(&wav, DecodeOptions::default()).unwrap();
+        let mut chunk = Vec::with_capacity(500);
+        let capacity = chunk.capacity();
+        let pointer = chunk.as_ptr();
+        let mut total = 0;
+        loop {
+            decoder.read_chunk_into(500, &mut chunk).unwrap();
+            if chunk.is_empty() {
+                break;
+            }
+            assert_eq!(chunk.capacity(), capacity, "chunk read reallocated samples");
+            assert_eq!(
+                chunk.as_ptr(),
+                pointer,
+                "chunk read moved the sample buffer"
+            );
+            total += chunk.len();
+        }
+        assert!(total > 0);
+        decoder.finish().unwrap();
     }
 
     #[test]

@@ -20,6 +20,9 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
     } else {
         "FCM: NON-DROP FRAME"
     };
+    // CMX3600 channel codes: AA/V means video plus two audio channels, while
+    // A means audio only on channel 1. Never label an audio-only source A/V.
+    let channel_code = if context.has_video { "AA/V" } else { "A" };
     let mut out = format!(
         "TITLE: {PRODUCT_NAME} - {}\n{frame_code}\n\n",
         context.source_name()
@@ -31,7 +34,7 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
         let record_out = context.timecode(clip.record_end)?.format();
         let _ = writeln!(
             out,
-            "{:03}  AX  AA/V  C       {source_in} {source_out} {record_in} {record_out}",
+            "{:03}  AX  {channel_code:<6}C       {source_in} {source_out} {record_in} {record_out}",
             clip.index + 1
         );
         let _ = writeln!(out, "* FROM CLIP NAME: {}", context.source_name());
@@ -67,6 +70,27 @@ mod tests {
             edl.contains("002  AX  AA/V  C       00:00:03:00 00:00:05:00 00:00:02:00 00:00:04:00")
         );
         assert!(!edl.contains(';'));
+    }
+
+    #[test]
+    fn audio_only_source_uses_the_audio_only_channel_code() {
+        // CMX3600 channel codes: "A" = audio only (channel 1), "AA/V" = video
+        // plus audio on channels 1 and 2. Source: "How to read an EDL",
+        // https://www.niwa.nu/2013/05/how-to-read-an-edl/ (Audio section).
+        let analysis = crate::export::tests::fixture();
+        let context = ExportContext::with_timecode(
+            Path::new("/media/podcast.wav"),
+            &analysis,
+            FrameRate::FPS_30,
+            false,
+        )
+        .with_has_video(false);
+        let edl = export(&context).unwrap();
+        assert!(
+            edl.contains("001  AX  A     C       00:00:00:00 00:00:02:00 00:00:00:00 00:00:02:00"),
+            "audio-only event should use `A`, not `AA/V`:\n{edl}"
+        );
+        assert!(!edl.contains("AA/V"), "no video stream exists:\n{edl}");
     }
 
     #[test]

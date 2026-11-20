@@ -43,7 +43,10 @@ pub use analysis::{
     frames_from_chunks, frames_from_samples, parse_margins, resolve_thresholds, sparkline,
 };
 pub use decode::{DecodeError, DecodeOptions, PcmDecoder, decode_all};
-pub use export::{ExportContext, ExportError, ExportFormat, Scan, TimelineClip, VideoInfo, export};
+pub use export::{
+    ExportContext, ExportError, ExportFormat, Scan, TimelineClip, VideoInfo, compact_analysis,
+    export,
+};
 pub use ffprobe::{AudioStream, MediaInfo, ProbeError, VideoStream, probe_file};
 pub use preview::{DEFAULT_SPARKLINE_WIDTH, preview, render_preview};
 pub use rational::{FrameRate, Rational, RationalError};

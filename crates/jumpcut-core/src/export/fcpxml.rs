@@ -35,13 +35,20 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
         "    <format id=\"rFmt1\" name=\"{format_name}\" frameDuration=\"{}\" width=\"{width}\" height=\"{height}\" colorSpace=\"{color_space}\"/>",
         rational_seconds(context.frame_duration())
     );
+    // FCPXML 1.10: the media URL lives in <media-rep kind="original-media"
+    // src=...> and the format is an IDREF attribute on <asset>. A `src`
+    // attribute on <asset> or a `<format>` child was removed in 1.9 and is
+    // rejected by Apple's 1.10 DTD (see tests/fixtures/FCPXMLv1_10.dtd).
     let _ = writeln!(
         out,
-        "    <asset id=\"rAsset1\" name=\"{source_name}\" src=\"{}\" duration=\"{}\" hasVideo=\"1\" hasAudio=\"1\">",
-        xml_escape(&file_url(context.source)),
+        "    <asset id=\"rAsset1\" name=\"{source_name}\" start=\"0s\" duration=\"{}\" hasVideo=\"1\" hasAudio=\"1\" format=\"rFmt1\">",
         rational_seconds(context.analysis.plan.source_duration)
     );
-    out.push_str("      <format ref=\"rFmt1\"/>\n");
+    let _ = writeln!(
+        out,
+        "      <media-rep kind=\"original-media\" src=\"{}\"/>",
+        xml_escape(&file_url(context.source))
+    );
     out.push_str("    </asset>\n");
     out.push_str("  </resources>\n");
     out.push_str("  <library>\n");
@@ -65,11 +72,11 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
         if let Some(speed) = clip.speed {
             out.push_str("              <timeMap>\n");
             out.push_str(
-                "                <timePt time=\"0/1s\" value=\"0/1s\" interp=\"linear\"/>\n",
+                "                <timept time=\"0/1s\" value=\"0/1s\" interp=\"linear\"/>\n",
             );
             let _ = writeln!(
                 out,
-                "                <timePt time=\"{}\" value=\"{}\" interp=\"linear\"/>",
+                "                <timept time=\"{}\" value=\"{}\" interp=\"linear\"/>",
                 rational_seconds(clip.record_duration()),
                 rational_seconds(clip.source_duration())
             );

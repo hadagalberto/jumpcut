@@ -25,24 +25,31 @@ expression: "snapshot(ExportFormat::Otio)"
         "children": [
           {
             "OTIO_SCHEMA": "Clip.2",
-            "media_reference": {
-              "OTIO_SCHEMA": "ExternalReference.1",
-              "available_range": {
-                "OTIO_SCHEMA": "TimeRange.1",
-                "duration": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 210
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "media_references": {
+              "DEFAULT_MEDIA": {
+                "OTIO_SCHEMA": "ExternalReference.1",
+                "available_range": {
+                  "OTIO_SCHEMA": "TimeRange.1",
+                  "duration": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 210
+                  },
+                  "start_time": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 0
+                  }
                 },
-                "start_time": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 0
-                }
-              },
-              "name": "input.mp4",
-              "target_url": "file:///media/input.mp4"
+                "metadata": {},
+                "name": "input.mp4",
+                "target_url": "file:///media/input.mp4"
+              }
             },
+            "metadata": {},
             "name": "input.mp4 1",
             "source_range": {
               "OTIO_SCHEMA": "TimeRange.1",
@@ -60,24 +67,31 @@ expression: "snapshot(ExportFormat::Otio)"
           },
           {
             "OTIO_SCHEMA": "Clip.2",
-            "media_reference": {
-              "OTIO_SCHEMA": "ExternalReference.1",
-              "available_range": {
-                "OTIO_SCHEMA": "TimeRange.1",
-                "duration": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 210
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "media_references": {
+              "DEFAULT_MEDIA": {
+                "OTIO_SCHEMA": "ExternalReference.1",
+                "available_range": {
+                  "OTIO_SCHEMA": "TimeRange.1",
+                  "duration": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 210
+                  },
+                  "start_time": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 0
+                  }
                 },
-                "start_time": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 0
-                }
-              },
-              "name": "input.mp4",
-              "target_url": "file:///media/input.mp4"
+                "metadata": {},
+                "name": "input.mp4",
+                "target_url": "file:///media/input.mp4"
+              }
             },
+            "metadata": {},
             "name": "input.mp4 2",
             "source_range": {
               "OTIO_SCHEMA": "TimeRange.1",
@@ -95,24 +109,31 @@ expression: "snapshot(ExportFormat::Otio)"
           },
           {
             "OTIO_SCHEMA": "Clip.2",
-            "media_reference": {
-              "OTIO_SCHEMA": "ExternalReference.1",
-              "available_range": {
-                "OTIO_SCHEMA": "TimeRange.1",
-                "duration": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 210
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "media_references": {
+              "DEFAULT_MEDIA": {
+                "OTIO_SCHEMA": "ExternalReference.1",
+                "available_range": {
+                  "OTIO_SCHEMA": "TimeRange.1",
+                  "duration": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 210
+                  },
+                  "start_time": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 0
+                  }
                 },
-                "start_time": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 0
-                }
-              },
-              "name": "input.mp4",
-              "target_url": "file:///media/input.mp4"
+                "metadata": {},
+                "name": "input.mp4",
+                "target_url": "file:///media/input.mp4"
+              }
             },
+            "metadata": {},
             "name": "input.mp4 3",
             "source_range": {
               "OTIO_SCHEMA": "TimeRange.1",
@@ -129,31 +150,43 @@ expression: "snapshot(ExportFormat::Otio)"
             }
           }
         ],
-        "name": "Video"
+        "effects": [],
+        "kind": "Video",
+        "markers": [],
+        "metadata": {},
+        "name": "Video",
+        "source_range": null
       },
       {
         "OTIO_SCHEMA": "Track.1",
         "children": [
           {
             "OTIO_SCHEMA": "Clip.2",
-            "media_reference": {
-              "OTIO_SCHEMA": "ExternalReference.1",
-              "available_range": {
-                "OTIO_SCHEMA": "TimeRange.1",
-                "duration": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 210
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "media_references": {
+              "DEFAULT_MEDIA": {
+                "OTIO_SCHEMA": "ExternalReference.1",
+                "available_range": {
+                  "OTIO_SCHEMA": "TimeRange.1",
+                  "duration": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 210
+                  },
+                  "start_time": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 0
+                  }
                 },
-                "start_time": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 0
-                }
-              },
-              "name": "input.mp4",
-              "target_url": "file:///media/input.mp4"
+                "metadata": {},
+                "name": "input.mp4",
+                "target_url": "file:///media/input.mp4"
+              }
             },
+            "metadata": {},
             "name": "input.mp4 1",
             "source_range": {
               "OTIO_SCHEMA": "TimeRange.1",
@@ -171,24 +204,31 @@ expression: "snapshot(ExportFormat::Otio)"
           },
           {
             "OTIO_SCHEMA": "Clip.2",
-            "media_reference": {
-              "OTIO_SCHEMA": "ExternalReference.1",
-              "available_range": {
-                "OTIO_SCHEMA": "TimeRange.1",
-                "duration": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 210
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "media_references": {
+              "DEFAULT_MEDIA": {
+                "OTIO_SCHEMA": "ExternalReference.1",
+                "available_range": {
+                  "OTIO_SCHEMA": "TimeRange.1",
+                  "duration": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 210
+                  },
+                  "start_time": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 0
+                  }
                 },
-                "start_time": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 0
-                }
-              },
-              "name": "input.mp4",
-              "target_url": "file:///media/input.mp4"
+                "metadata": {},
+                "name": "input.mp4",
+                "target_url": "file:///media/input.mp4"
+              }
             },
+            "metadata": {},
             "name": "input.mp4 2",
             "source_range": {
               "OTIO_SCHEMA": "TimeRange.1",
@@ -206,24 +246,31 @@ expression: "snapshot(ExportFormat::Otio)"
           },
           {
             "OTIO_SCHEMA": "Clip.2",
-            "media_reference": {
-              "OTIO_SCHEMA": "ExternalReference.1",
-              "available_range": {
-                "OTIO_SCHEMA": "TimeRange.1",
-                "duration": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 210
+            "active_media_reference_key": "DEFAULT_MEDIA",
+            "effects": [],
+            "markers": [],
+            "media_references": {
+              "DEFAULT_MEDIA": {
+                "OTIO_SCHEMA": "ExternalReference.1",
+                "available_range": {
+                  "OTIO_SCHEMA": "TimeRange.1",
+                  "duration": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 210
+                  },
+                  "start_time": {
+                    "OTIO_SCHEMA": "RationalTime.1",
+                    "rate": 30.0,
+                    "value": 0
+                  }
                 },
-                "start_time": {
-                  "OTIO_SCHEMA": "RationalTime.1",
-                  "rate": 30.0,
-                  "value": 0
-                }
-              },
-              "name": "input.mp4",
-              "target_url": "file:///media/input.mp4"
+                "metadata": {},
+                "name": "input.mp4",
+                "target_url": "file:///media/input.mp4"
+              }
             },
+            "metadata": {},
             "name": "input.mp4 3",
             "source_range": {
               "OTIO_SCHEMA": "TimeRange.1",
@@ -240,9 +287,18 @@ expression: "snapshot(ExportFormat::Otio)"
             }
           }
         ],
-        "name": "Audio"
+        "effects": [],
+        "kind": "Audio",
+        "markers": [],
+        "metadata": {},
+        "name": "Audio",
+        "source_range": null
       }
     ],
-    "name": "Tracks"
+    "effects": [],
+    "markers": [],
+    "metadata": {},
+    "name": "Tracks",
+    "source_range": null
   }
 }

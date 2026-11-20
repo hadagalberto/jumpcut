@@ -26,6 +26,7 @@ pub mod otio;
 pub mod premiere;
 pub mod video;
 
+pub use json::compact_analysis;
 pub use video::{Scan, VideoInfo};
 
 /// Errors produced while formatting an edit timeline.
@@ -157,6 +158,8 @@ pub struct ExportContext<'a> {
     pub drop_frame: bool,
     /// Source video characteristics used by the NLE exporters.
     pub video: VideoInfo,
+    /// Whether the source actually has a video stream (audio-only files do not).
+    pub has_video: bool,
 }
 
 impl<'a> ExportContext<'a> {
@@ -171,6 +174,7 @@ impl<'a> ExportContext<'a> {
             frame_rate,
             drop_frame: frame_rate.drop_frames_per_minute().is_some(),
             video: VideoInfo::DEFAULT,
+            has_video: true,
         }
     }
 
@@ -188,6 +192,7 @@ impl<'a> ExportContext<'a> {
             frame_rate,
             drop_frame,
             video: VideoInfo::DEFAULT,
+            has_video: true,
         }
     }
 
@@ -195,6 +200,15 @@ impl<'a> ExportContext<'a> {
     #[must_use]
     pub fn with_video(mut self, video: VideoInfo) -> Self {
         self.video = video;
+        self
+    }
+
+    /// Records whether the source has a video stream.
+    ///
+    /// Audio-only sources must not be exported as A/V events in CMX3600 EDLs.
+    #[must_use]
+    pub const fn with_has_video(mut self, has_video: bool) -> Self {
+        self.has_video = has_video;
         self
     }
 

@@ -9,8 +9,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use jumpcut_core::{
     AnalysisConfig, Dbfs, DecodeOptions, ExportContext, ExportFormat, FrameRate, RenderOptions,
-    Seconds, StreamSelection, ThresholdSelection, Timecode, VideoInfo, analyze_file, export,
-    parse_margins, preview, probe_file, render,
+    Seconds, StreamSelection, ThresholdSelection, Timecode, VideoInfo, analyze_file,
+    compact_analysis, export, parse_margins, preview, probe_file, render,
 };
 
 #[derive(Debug, Parser)]
@@ -110,6 +110,9 @@ struct AnalyzeArgs {
     /// Emit machine-readable analysis JSON instead of a terminal preview.
     #[arg(long)]
     json: bool,
+    /// Emit only the edit summary with --json (no per-frame measurements).
+    #[arg(long)]
+    compact: bool,
 }
 
 /// Arguments for rendering and exporting, also flattened at the top level.
@@ -202,13 +205,22 @@ fn run_analyze(args: AnalyzeArgs) -> Result<()> {
         input,
         options,
         json,
+        compact,
     } = args;
     let (config, selection) = settings(&options)?;
     let analysis = analyze_file(&input, selection, DecodeOptions::default(), config)
         .with_context(|| format!("failed to analyse {}", input.display()))?;
     if json {
-        println!("{}", serde_json::to_string_pretty(&analysis)?);
+        let value = if compact {
+            compact_analysis(&analysis)
+        } else {
+            serde_json::to_value(&analysis)?
+        };
+        println!("{}", serde_json::to_string_pretty(&value)?);
     } else {
+        if compact {
+            eprintln!("warning: --compact only affects --json output");
+        }
         print!("{}", preview(&analysis));
     }
     Ok(())
@@ -242,13 +254,15 @@ fn run_render(args: RenderArgs) -> Result<()> {
             .or_else(|| media.video.as_ref().and_then(|video| video.frame_rate))
             .unwrap_or(FrameRate::FPS_30);
         let use_drop_frame = drop_frame || frame_rate.drop_frames_per_minute().is_some();
+        let has_video = media.video.is_some();
         let video = media
             .video
             .as_ref()
             .map(VideoInfo::from_stream)
             .unwrap_or_default();
         let context = ExportContext::with_timecode(&input, &analysis, frame_rate, use_drop_frame)
-            .with_video(video);
+            .with_video(video)
+            .with_has_video(has_video);
         let text = export(&context, format)?;
         match output {
             Some(path) => {
@@ -307,5 +321,23 @@ fn print_probe_report(info: &jumpcut_core::MediaInfo) {
             "audio:    stream {} {} {} Hz, {} ch",
             audio.index, audio.codec, audio.sample_rate, audio.channels
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compact_flag_is_parsed_for_json_analysis() {
+        let cli = Cli::try_parse_from(["jumpcut", "analyze", "episode.wav", "--json", "--compact"])
+            .unwrap();
+        match cli.command {
+            Some(Command::Analyze(args)) => {
+                assert!(args.json);
+                assert!(args.compact);
+            }
+            other => panic!("expected analyze command, got {other:?}"),
+        }
     }
 }

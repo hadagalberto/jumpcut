@@ -7,8 +7,8 @@ expression: export(&context).unwrap()
 <fcpxml version="1.10">
   <resources>
     <format id="rFmt1" name="FFVideoFormatRateUndefined" frameDuration="1/30s" width="1080" height="1920" colorSpace="1-1-1 (Rec. 709)"/>
-    <asset id="rAsset1" name="input.mp4" src="file:///media/input.mp4" duration="7/1s" hasVideo="1" hasAudio="1">
-      <format ref="rFmt1"/>
+    <asset id="rAsset1" name="input.mp4" start="0s" duration="7/1s" hasVideo="1" hasAudio="1" format="rFmt1">
+      <media-rep kind="original-media" src="file:///media/input.mp4"/>
     </asset>
   </resources>
   <library>

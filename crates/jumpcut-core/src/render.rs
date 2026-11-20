@@ -408,10 +408,15 @@ pub fn ffmpeg_args(
             }
         }
         if options.has_audio {
+            let codec = audio_codec_for_container(output);
             args.push("-c:a".to_owned());
-            args.push("aac".to_owned());
-            args.push("-b:a".to_owned());
-            args.push(format!("{}k", options.audio_bitrate_kbps));
+            args.push(codec.to_owned());
+            // PCM ignores a bitrate request (and ffmpeg warns about it); only
+            // lossy codecs use the configured target bitrate.
+            if audio_uses_bitrate(codec) {
+                args.push("-b:a".to_owned());
+                args.push(format!("{}k", options.audio_bitrate_kbps));
+            }
         }
     }
     if !options.has_audio {
@@ -426,6 +431,30 @@ pub fn ffmpeg_args(
     }
     args.push(output.to_string_lossy().into_owned());
     args
+}
+
+/// Audio encoder implied by the output container.
+///
+/// A WAV file must carry PCM; AAC in a WAV is unreadable by most decoders.
+/// WebM/MKV carry Opus, MP4/MOV/M4A carry AAC, and MP3 carries MP3.
+#[must_use]
+pub fn audio_codec_for_container(path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(OsStr::to_str)
+        .map(str::to_ascii_lowercase)
+        .as_deref()
+    {
+        Some("wav") => "pcm_s16le",
+        Some("webm" | "mkv") => "libopus",
+        Some("mp3") => "libmp3lame",
+        _ => "aac",
+    }
+}
+
+/// Whether an audio codec accepts `-b:a`.
+fn audio_uses_bitrate(codec: &str) -> bool {
+    !matches!(codec, "pcm_s16le" | "pcm_s24le" | "pcm_f32le")
 }
 
 fn is_mp4_container(path: &Path) -> bool {
@@ -492,8 +521,17 @@ pub fn render(
         // on sources with reordered (B-frame) GOPs.
         let directory = tempfile::tempdir()?;
         let mut paths = Vec::with_capacity(plan.segments.len());
+        // Keep intermediate spans in the same container as the final output so
+        // the copy join preserves the right codec (PCM for WAV, AAC for MP4).
+        let segment_extension = output
+            .extension()
+            .and_then(OsStr::to_str)
+            .unwrap_or("mp4")
+            .to_ascii_lowercase();
         for (index, segment) in plan.segments.iter().enumerate() {
-            let path = directory.path().join(format!("segment-{index:05}.mp4"));
+            let path = directory
+                .path()
+                .join(format!("segment-{index:05}.{segment_extension}"));
             let single = RenderPlan {
                 segments: vec![*segment],
                 strategy: RenderStrategy::FilterScript,
@@ -711,6 +749,53 @@ mod tests {
     }
 
     #[test]
+    fn audio_codec_follows_the_output_container() {
+        // Container codec support (ffmpeg muxer defaults): WAV carries PCM,
+        // MP4/MOV carry AAC, WebM/MKV carry Opus. Writing AAC into a WAV makes
+        // ffprobe report `codec aac in WAV`, which decoders cannot read.
+        let analysis = analyze_samples(&samples(), 16_000, &config(None)).unwrap();
+        let options = RenderOptions::default();
+        let plan = plan(&analysis, &options);
+
+        let wav = ffmpeg_args(
+            &plan,
+            Path::new("/media/in.mp4"),
+            Path::new("/media/episode-cut.wav"),
+            &options,
+            None,
+        );
+        assert!(wav.windows(2).any(|pair| pair == ["-c:a", "pcm_s16le"]));
+        assert!(!wav.iter().any(|arg| arg == "-b:a"));
+
+        for output in ["/media/out.mp4", "/media/out.mov", "/media/out.m4a"] {
+            let args = ffmpeg_args(
+                &plan,
+                Path::new("/media/in.mp4"),
+                Path::new(output),
+                &options,
+                None,
+            );
+            assert!(
+                args.windows(2).any(|pair| pair == ["-c:a", "aac"]),
+                "{output}"
+            );
+            assert!(
+                args.windows(2).any(|pair| pair == ["-b:a", "192k"]),
+                "{output}"
+            );
+        }
+
+        let webm = ffmpeg_args(
+            &plan,
+            Path::new("/media/in.mp4"),
+            Path::new("/media/out.webm"),
+            &options,
+            None,
+        );
+        assert!(webm.windows(2).any(|pair| pair == ["-c:a", "libopus"]));
+    }
+
+    #[test]
     fn concat_list_has_one_in_out_pair_per_segment() {
         let analysis = analyze_samples(&samples(), 16_000, &config(None)).unwrap();
         let list = concat_list(
@@ -855,6 +940,64 @@ mod tests {
             "duration {}",
             duration(&output)
         );
+    }
+
+    #[test]
+    fn end_to_end_wav_render_produces_valid_pcm_wav() {
+        if !tool::is_available("ffmpeg") || !tool::is_available("ffprobe") {
+            eprintln!("skipping end-to-end WAV render: ffmpeg/ffprobe not installed");
+            return;
+        }
+        let directory = tempfile::tempdir().unwrap();
+        // The README example: episode.wav -> episode-cut.wav, with two quiet
+        // seconds between three speech spans.
+        let input = directory.path().join("episode.wav");
+        let output = directory.path().join("episode-cut.wav");
+        let graph = "volume='if(between(t,1,2)+between(t,3,4),0,1)':eval=frame";
+        let status = Command::new("ffmpeg")
+            .args([
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-nostdin",
+                "-f",
+                "lavfi",
+                "-i",
+                "sine=frequency=440:sample_rate=16000:duration=4",
+                "-af",
+                graph,
+                "-ac",
+                "1",
+                "-c:a",
+                "pcm_s16le",
+                "-y",
+            ])
+            .arg(&input)
+            .status()
+            .unwrap();
+        assert!(status.success(), "ffmpeg could not generate the test WAV");
+
+        let analysis = analyze_file(
+            &input,
+            StreamSelection::Single(0),
+            DecodeOptions::default(),
+            config(None),
+        )
+        .unwrap();
+        assert_eq!(analysis.plan.kept_segments().len(), 2);
+        render(&input, &output, &analysis, &RenderOptions::default()).unwrap();
+
+        let info = probe_file(&output).unwrap();
+        assert_eq!(info.format_name.as_deref(), Some("wav"));
+        let audio = &info.audio[0];
+        assert_eq!(
+            audio.codec, "pcm_s16le",
+            "WAV must contain PCM, not {}",
+            audio.codec
+        );
+        assert_eq!(audio.sample_rate, 16_000);
+        assert_eq!(audio.channels, 1);
+        assert!((duration(&output) - 2.0).abs() <= 0.1);
     }
 
     #[test]

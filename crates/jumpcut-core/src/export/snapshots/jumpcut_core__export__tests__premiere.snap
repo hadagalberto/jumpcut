@@ -5,140 +5,141 @@ expression: "snapshot(ExportFormat::Premiere)"
 <?xml version="1.0" encoding="UTF-8"?>
 <xmeml version="4">
   <sequence id="jumpcut-sequence" name="input.mp4 - jumpcut">
+    <name>input.mp4 - jumpcut</name>
     <duration>150</duration>
-    <rate>30</rate>
-    <timebase>30</timebase>
-    <ntsc>FALSE</ntsc>
-    <format>
-      <samplecharacteristics>
-        <rate><timebase>30</timebase><ntsc>FALSE</ntsc></rate>
-        <width>1920</width>
-        <height>1080</height>
-      </samplecharacteristics>
-    </format>
-    <track>
-      <clipitem id="jumpcut-video-0">
-        <name>input.mp4 1</name>
-        <duration>60</duration>
-        <rate>30</rate>
-        <start>0</start>
-        <end>60</end>
-        <in>0</in>
-        <out>60</out>
-        <file id="jumpcut-media-0">
-          <name>input.mp4</name>
-          <pathurl>file:///media/input.mp4</pathurl>
-          <duration>60</duration>
-          <media>
-            <video><duration>60</duration><width>1920</width><height>1080</height></video>
-          </media>
-          <rate><timebase>30</timebase></rate>
-          <timecode><string>00:00:00:00</string><frameRate>30</frameRate></timecode>
-          <timecode><string>00:00:00:00</string><frameRate>30</frameRate></timecode>
-        </file>
-      </clipitem>
-      <clipitem id="jumpcut-video-1">
-        <name>input.mp4 2</name>
-        <duration>60</duration>
-        <rate>30</rate>
-        <start>60</start>
-        <end>120</end>
-        <in>90</in>
-        <out>150</out>
-        <file id="jumpcut-media-1">
-          <name>input.mp4</name>
-          <pathurl>file:///media/input.mp4</pathurl>
-          <duration>150</duration>
-          <media>
-            <video><duration>150</duration><width>1920</width><height>1080</height></video>
-          </media>
-          <rate><timebase>30</timebase></rate>
-          <timecode><string>00:00:03:00</string><frameRate>30</frameRate></timecode>
-          <timecode><string>00:00:02:00</string><frameRate>30</frameRate></timecode>
-        </file>
-      </clipitem>
-      <clipitem id="jumpcut-video-2">
-        <name>input.mp4 3</name>
-        <duration>30</duration>
-        <rate>30</rate>
-        <start>120</start>
-        <end>150</end>
-        <in>180</in>
-        <out>210</out>
-        <file id="jumpcut-media-2">
-          <name>input.mp4</name>
-          <pathurl>file:///media/input.mp4</pathurl>
-          <duration>210</duration>
-          <media>
-            <video><duration>210</duration><width>1920</width><height>1080</height></video>
-          </media>
-          <rate><timebase>30</timebase></rate>
-          <timecode><string>00:00:06:00</string><frameRate>30</frameRate></timecode>
-          <timecode><string>00:00:04:00</string><frameRate>30</frameRate></timecode>
-        </file>
-      </clipitem>
-    </track>
-    <track>
-      <clipitem id="jumpcut-audio-0">
-        <name>input.mp4 1</name>
-        <duration>60</duration>
-        <rate>30</rate>
-        <start>0</start>
-        <end>60</end>
-        <in>0</in>
-        <out>60</out>
-        <file id="jumpcut-media-0">
-          <name>input.mp4</name>
-          <pathurl>file:///media/input.mp4</pathurl>
-          <duration>60</duration>
-          <media>
-            <audio><numOutputChannels>2</numOutputChannels><format>int</format><sampleRate>48000</sampleRate></audio>
-          </media>
-          <rate><timebase>30</timebase></rate>
-          <timecode><string>00:00:00:00</string><frameRate>30</frameRate></timecode>
-          <timecode><string>00:00:00:00</string><frameRate>30</frameRate></timecode>
-        </file>
-      </clipitem>
-      <clipitem id="jumpcut-audio-1">
-        <name>input.mp4 2</name>
-        <duration>60</duration>
-        <rate>30</rate>
-        <start>60</start>
-        <end>120</end>
-        <in>90</in>
-        <out>150</out>
-        <file id="jumpcut-media-1">
-          <name>input.mp4</name>
-          <pathurl>file:///media/input.mp4</pathurl>
-          <duration>150</duration>
-          <media>
-            <audio><numOutputChannels>2</numOutputChannels><format>int</format><sampleRate>48000</sampleRate></audio>
-          </media>
-          <rate><timebase>30</timebase></rate>
-          <timecode><string>00:00:03:00</string><frameRate>30</frameRate></timecode>
-          <timecode><string>00:00:02:00</string><frameRate>30</frameRate></timecode>
-        </file>
-      </clipitem>
-      <clipitem id="jumpcut-audio-2">
-        <name>input.mp4 3</name>
-        <duration>30</duration>
-        <rate>30</rate>
-        <start>120</start>
-        <end>150</end>
-        <in>180</in>
-        <out>210</out>
-        <file id="jumpcut-media-2">
-          <name>input.mp4</name>
-          <pathurl>file:///media/input.mp4</pathurl>
-          <duration>210</duration>
-          <media>
-            <audio><numOutputChannels>2</numOutputChannels><format>int</format><sampleRate>48000</sampleRate></audio>
-          </media>
-          <rate><timebase>30</timebase></rate>
-          <timecode><string>00:00:06:00</string><frameRate>30</frameRate></timecode>
-          <timecode><string>00:00:04:00</string><frameRate>30</frameRate></timecode>
-        </file>
-      </clipitem>
-    </track>
+    <rate>
+      <timebase>30</timebase>
+      <ntsc>FALSE</ntsc>
+    </rate>
+    <media>
+      <video>
+        <format>
+          <samplecharacteristics>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <width>1920</width>
+            <height>1080</height>
+          </samplecharacteristics>
+        </format>
+        <track>
+          <clipitem id="jumpcut-video-0">
+            <name>input.mp4 1</name>
+            <duration>60</duration>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <start>0</start>
+            <end>60</end>
+            <in>0</in>
+            <out>60</out>
+            <link><linkclipref>jumpcut-audio-0</linkclipref></link>
+            <file id="jumpcut-media-1">
+              <name>input.mp4</name>
+              <pathurl>file:///media/input.mp4</pathurl>
+              <duration>210</duration>
+              <rate>
+                <timebase>30</timebase>
+                <ntsc>FALSE</ntsc>
+              </rate>
+              <timecode>
+                <string>00:00:00:00</string>
+                <rate>
+                  <timebase>30</timebase>
+                  <ntsc>FALSE</ntsc>
+                </rate>
+                <displayformat>NDF</displayformat>
+              </timecode>
+              <media>
+                <video><duration>210</duration><width>1920</width><height>1080</height></video>
+                <audio><duration>210</duration><numOutputChannels>2</numOutputChannels><format>int</format><sampleRate>48000</sampleRate></audio>
+              </media>
+            </file>
+          </clipitem>
+          <clipitem id="jumpcut-video-1">
+            <name>input.mp4 2</name>
+            <duration>60</duration>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <start>60</start>
+            <end>120</end>
+            <in>90</in>
+            <out>150</out>
+            <link><linkclipref>jumpcut-audio-1</linkclipref></link>
+            <file id="jumpcut-media-1"/>
+          </clipitem>
+          <clipitem id="jumpcut-video-2">
+            <name>input.mp4 3</name>
+            <duration>30</duration>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <start>120</start>
+            <end>150</end>
+            <in>180</in>
+            <out>210</out>
+            <link><linkclipref>jumpcut-audio-2</linkclipref></link>
+            <file id="jumpcut-media-1"/>
+          </clipitem>
+        </track>
+      </video>
+      <audio>
+        <format>
+          <samplecharacteristics>
+            <depth>16</depth>
+            <samplerate>48000</samplerate>
+          </samplecharacteristics>
+        </format>
+        <track>
+          <clipitem id="jumpcut-audio-0">
+            <name>input.mp4 1</name>
+            <duration>60</duration>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <start>0</start>
+            <end>60</end>
+            <in>0</in>
+            <out>60</out>
+            <link><linkclipref>jumpcut-video-0</linkclipref></link>
+            <file id="jumpcut-media-1"/>
+          </clipitem>
+          <clipitem id="jumpcut-audio-1">
+            <name>input.mp4 2</name>
+            <duration>60</duration>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <start>60</start>
+            <end>120</end>
+            <in>90</in>
+            <out>150</out>
+            <link><linkclipref>jumpcut-video-1</linkclipref></link>
+            <file id="jumpcut-media-1"/>
+          </clipitem>
+          <clipitem id="jumpcut-audio-2">
+            <name>input.mp4 3</name>
+            <duration>30</duration>
+            <rate>
+              <timebase>30</timebase>
+              <ntsc>FALSE</ntsc>
+            </rate>
+            <start>120</start>
+            <end>150</end>
+            <in>180</in>
+            <out>210</out>
+            <link><linkclipref>jumpcut-video-2</linkclipref></link>
+            <file id="jumpcut-media-1"/>
+          </clipitem>
+        </track>
+      </audio>
+    </media>
   </sequence>
 </xmeml>

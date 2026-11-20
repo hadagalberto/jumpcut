@@ -18,6 +18,7 @@ proptest.workspace = true
 tempfile.workspace = true
 insta.workspace = true
 criterion.workspace = true
+roxmltree = "0.20"
 
 [[bench]]
 name = "analysis"
