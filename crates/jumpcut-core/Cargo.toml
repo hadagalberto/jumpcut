@@ -1,0 +1,17 @@
+[package]
+name = "jumpcut-core"
+description = "Core analysis, timing and export library for jumpcut"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+tempfile.workspace = true
