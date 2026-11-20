@@ -12,14 +12,25 @@
 ## Development loop
 
 ```sh
-cargo fmt --all
+cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 RUSTFLAGS=-Dwarnings cargo build --workspace --all-targets
-cargo test --workspace
+cargo test --workspace --release
 ```
 
 All four must pass before committing. The CI matrix repeats them on Ubuntu,
 Windows and macOS with ffmpeg installed.
+
+Benchmarks live in `crates/jumpcut-core/benches/analysis.rs` and use criterion.
+Run them locally to check performance-sensitive changes:
+
+```sh
+cargo bench -p jumpcut-core --bench analysis
+```
+
+New analysis logic should keep the two-hour streaming benchmark and the
+release-mode performance bound test representative; do not delete or weaken
+either to make a build pass.
 
 ## Tests that need ffmpeg
 

@@ -6,6 +6,25 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added (milestone 4 — documentation and benchmarks)
+
+- README (EN/PT-BR) expanded with installation instructions (prebuilt binaries,
+  building from source with Rust 1.85+, and ffmpeg/ffprobe setup per platform),
+  quick start, usage recipes for live streams, podcasts and multi-microphone
+  audio, and step-by-step import instructions for DaVinci Resolve, Premiere Pro
+  and Final Cut Pro.
+- A tuning table documenting every analysis/rendering knob (`--threshold` vs
+  `--auto`, hysteresis, minimum durations, margins, gap merging, silent speed,
+  frame-rate snapping, stream copy and hardware encoders) plus the `--probe`,
+  `--timecode` and custom-frame-grid helpers.
+- Criterion benchmark suite in `crates/jumpcut-core/benches/analysis.rs` covering
+  streaming frame measurement at one-minute and two-hour scales, the full
+  detect-and-plan pipeline, exact NTSC snapping and drop-frame timecode
+  round-trips.
+- Re-exported `frames_from_chunks` and `frames_from_samples` from the
+  `jumpcut-core` crate root so the streaming API used by the benchmarks is
+  available to library consumers.
+
 ### Added (milestone 3 — outputs)
 
 - ffmpeg rendering with automatic strategy selection: a `filter_complex` graph

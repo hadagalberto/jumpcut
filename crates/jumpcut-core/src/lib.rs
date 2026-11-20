@@ -1,14 +1,14 @@
 //! Core library for jumpcut.
 //!
-//! Milestone 1 provides the timing, metadata and decoding foundations used by
-//! the later analysis and export stages:
+//! The library covers timing, decoding, analysis, planning, rendering and
+//! timeline export:
 //!
 //! - exact [`Rational`] time and [`FrameRate`] arithmetic (no NTSC float drift);
 //! - [`Timecode`] formatting/parsing, including drop-frame counting;
 //! - [`probe_file`] for reading metadata through ffprobe;
 //! - [`PcmDecoder`] for streaming `f32le` samples out of ffmpeg;
 //! - [`analysis`] for streaming RMS/peak frames, adaptive thresholds, hysteresis,
-//!   silence detection and frame-accurate edit planning (milestone 2);
+//!   silence detection and frame-accurate edit planning;
 //! - [`render`] for ffmpeg rendering with automatic strategy selection, stream
 //!   copy and hardware encoder passthrough;
 //! - [`export`] for FCPXML, Premiere, EDL, OTIO, concat and JSON timelines;
@@ -39,8 +39,8 @@ pub mod tool;
 pub use analysis::{
     Analysis, AnalysisConfig, AnalysisError, Dbfs, DetectionThresholds, Edit, FrameConfig, Margins,
     Seconds, SegmentPlan, SilenceRegion, StreamSelection, ThresholdSelection, TimeSpan,
-    analyze_file, analyze_frames, analyze_samples, atempo_chain, detect_silences, parse_margins,
-    resolve_thresholds, sparkline,
+    analyze_file, analyze_frames, analyze_samples, atempo_chain, detect_silences,
+    frames_from_chunks, frames_from_samples, parse_margins, resolve_thresholds, sparkline,
 };
 pub use decode::{DecodeError, DecodeOptions, PcmDecoder, decode_all};
 pub use export::{ExportContext, ExportError, ExportFormat, TimelineClip, export};
