@@ -1,0 +1,30 @@
+---
+source: crates/jumpcut-core/src/export/fcpxml.rs
+expression: export(&context).unwrap()
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+<fcpxml version="1.10">
+  <resources>
+    <format id="rFmt1" name="FFVideoFormat3840x2160p60" frameDuration="1/60s" width="3840" height="2160" colorSpace="1-1-1 (Rec. 2020)"/>
+    <asset id="rAsset1" name="input.mp4" src="file:///media/input.mp4" duration="7/1s" hasVideo="1" hasAudio="1">
+      <format ref="rFmt1"/>
+    </asset>
+  </resources>
+  <library>
+    <event name="jumpcut">
+      <project name="input.mp4 - jumpcut">
+        <sequence duration="5/1s" format="rFmt1">
+          <spine>
+            <asset-clip ref="rAsset1" offset="0/1s" start="0/1s" duration="2/1s" name="input.mp4 1" tcFormat="NDF">
+            </asset-clip>
+            <asset-clip ref="rAsset1" offset="2/1s" start="3/1s" duration="2/1s" name="input.mp4 2" tcFormat="NDF">
+            </asset-clip>
+            <asset-clip ref="rAsset1" offset="4/1s" start="6/1s" duration="1/1s" name="input.mp4 3" tcFormat="NDF">
+            </asset-clip>
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>

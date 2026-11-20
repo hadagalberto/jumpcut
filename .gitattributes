@@ -1,0 +1,49 @@
+# Normalise all text files to LF in the repository and in working trees.
+# rustfmt.toml pins newline_style = "Unix"; without this, Windows checkouts
+# get CRLF and `cargo fmt --check` fails before any code is examined.
+* text=auto eol=lf
+
+# Source, config and documentation are plain text on every platform.
+*.rs text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.snap text eol=lf
+*.lock text eol=lf
+LICENSE text eol=lf
+
+# Never rewrite binary fixtures or release artifacts.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.bmp binary
+*.tiff binary
+*.mp4 binary
+*.mov binary
+*.mkv binary
+*.webm binary
+*.avi binary
+*.m4v binary
+*.mp3 binary
+*.wav binary
+*.m4a binary
+*.aac binary
+*.flac binary
+*.ogg binary
+*.opus binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
+*.7z binary
+*.pdf binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.wasm binary

@@ -6,6 +6,23 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Fixed (milestone 5 — maintainer fix pass)
+
+- FCPXML now derives width, height, frame-rate-specific format name and colour
+  space from the probed video stream instead of hardcoding 1080p30. Unknown
+  resolutions/rates use `FFVideoFormatRateUndefined`; snapshots cover
+  320x240@29.97, 1920x1080@23.976, 3840x2160@60 and 1080x1920@30.
+- Premiere xmeml uses probed `samplecharacteristics` dimensions and derives the
+  `ntsc` flag from the frame rate rather than the drop-frame preference; OTIO
+  timelines carry video dimensions, scan and colour-space metadata.
+- Added `.gitattributes` with `text=auto eol=lf` plus binary media patterns and
+  renormalised the repository, so `cargo fmt --check` passes on Windows.
+- CI now installs ffmpeg with an OS-specific step, refreshes the Windows PATH,
+  and runs the release test suite; removed the global `RUSTFLAGS=-Dwarnings`
+  that could fail on dependency warnings.
+- README examples corrected: muxing PCM WAVs to M4A needs `-c aac`, and
+  drop-frame timecode is only valid at 29.97/59.94.
+
 ### Added (milestone 4 — documentation and benchmarks)
 
 - README (EN/PT-BR) expanded with installation instructions (prebuilt binaries,

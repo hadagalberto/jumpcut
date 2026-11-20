@@ -66,6 +66,14 @@ pub struct VideoStream {
     pub duration: Option<Rational>,
     /// Number of frames, when ffprobe knows it.
     pub nb_frames: Option<u64>,
+    /// ffprobe colour-space tag (for example `bt709`).
+    pub color_space: Option<String>,
+    /// ffprobe colour-primaries tag (for example `bt709`).
+    pub color_primaries: Option<String>,
+    /// ffprobe colour-transfer tag (for example `bt709`).
+    pub color_transfer: Option<String>,
+    /// ffprobe field order (`progressive`, `tt`, `bb`, `tb` or `bt`).
+    pub field_order: Option<String>,
 }
 
 /// Metadata for one audio stream.
@@ -146,6 +154,10 @@ struct RawStream {
     channels: Option<u16>,
     duration: Option<String>,
     nb_frames: Option<String>,
+    color_space: Option<String>,
+    color_primaries: Option<String>,
+    color_transfer: Option<String>,
+    field_order: Option<String>,
 }
 
 fn parse_duration(raw: Option<&String>) -> Option<Rational> {
@@ -176,6 +188,10 @@ fn convert(tool_output: RawProbe, path: &Path) -> MediaInfo {
                     frame_rate: parse_rate(&stream),
                     duration: parse_duration(stream.duration.as_ref()),
                     nb_frames: stream.nb_frames.and_then(|text| text.parse().ok()),
+                    color_space: stream.color_space,
+                    color_primaries: stream.color_primaries,
+                    color_transfer: stream.color_transfer,
+                    field_order: stream.field_order,
                 });
             }
             Some("audio") => {
@@ -315,6 +331,38 @@ mod tests {
         assert_eq!(info.video.as_ref().unwrap().frame_rate, None);
         assert_eq!(info.frame_rate_or_default(), FrameRate::FPS_30);
         assert_eq!(info.duration_seconds(), None);
+    }
+
+    #[test]
+    fn decodes_video_color_and_field_metadata() {
+        let raw: RawProbe = serde_json::from_str(
+            r#"{"format":{},"streams":[{"index":0,"codec_type":"video",
+                "width":1920,"height":1080,"r_frame_rate":"30000/1001",
+                "color_space":"bt709","color_primaries":"bt709",
+                "color_transfer":"bt709","field_order":"tt"}]}"#,
+        )
+        .unwrap();
+        let info = convert(raw, Path::new("interlaced.mov"));
+        let video = info.video.as_ref().unwrap();
+        assert_eq!(video.color_space.as_deref(), Some("bt709"));
+        assert_eq!(video.color_primaries.as_deref(), Some("bt709"));
+        assert_eq!(video.color_transfer.as_deref(), Some("bt709"));
+        assert_eq!(video.field_order.as_deref(), Some("tt"));
+    }
+
+    #[test]
+    fn absent_video_color_metadata_stays_none() {
+        let raw: RawProbe = serde_json::from_str(
+            r#"{"format":{},"streams":[{"index":0,"codec_type":"video",
+                "width":320,"height":240,"color_space":null,"field_order":null}]}"#,
+        )
+        .unwrap();
+        let video = convert(raw, Path::new("small.mp4")).video.unwrap();
+        assert_eq!(video.color_space, None);
+        assert_eq!(video.color_primaries, None);
+        assert_eq!(video.color_transfer, None);
+        assert_eq!(video.field_order, None);
+        assert_eq!((video.width, video.height), (320, 240));
     }
 
     #[test]

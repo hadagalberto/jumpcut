@@ -9,18 +9,20 @@
 use crate::export::{ExportContext, ExportError, file_url, rational_seconds, xml_escape};
 use std::fmt::Write;
 
-/// Default video dimensions written to the format resource.
-const WIDTH: u32 = 1920;
-/// Default video dimensions written to the format resource.
-const HEIGHT: u32 = 1080;
-
 /// Renders the FCPXML 1.10 document for `context`.
+///
+/// The format resource describes the probed video stream rather than assuming
+/// a 1080p30 source; unknown dimensions or rates use Apple's
+/// `FFVideoFormatRateUndefined` name.
 ///
 /// # Errors
 ///
 /// Currently infallible, but returns [`ExportError`] for a uniform exporter API.
 pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
-    let format_name = format!("FFVideoFormat{HEIGHT}p{}", context.frame_rate.nominal_fps());
+    let format_name = context.video.fcp_format_name(context.frame_rate);
+    let color_space = context.video.fcp_color_space_or_default();
+    let width = context.video.width;
+    let height = context.video.height;
     let tc_format = if context.drop_frame { "DF" } else { "NDF" };
     let source_name = xml_escape(&context.source_name());
     let mut out = String::new();
@@ -30,7 +32,7 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
     out.push_str("  <resources>\n");
     let _ = writeln!(
         out,
-        "    <format id=\"rFmt1\" name=\"{format_name}\" frameDuration=\"{}\" width=\"{WIDTH}\" height=\"{HEIGHT}\" colorSpace=\"1-1-1 (Rec. 709)\"/>",
+        "    <format id=\"rFmt1\" name=\"{format_name}\" frameDuration=\"{}\" width=\"{width}\" height=\"{height}\" colorSpace=\"{color_space}\"/>",
         rational_seconds(context.frame_duration())
     );
     let _ = writeln!(
@@ -88,9 +90,34 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::export::ExportFormat;
+    use crate::export::{ExportFormat, VideoInfo};
     use crate::rational::{FrameRate, Rational};
     use std::path::Path;
+
+    fn video_context<'a>(
+        analysis: &'a crate::analysis::Analysis,
+        width: u32,
+        height: u32,
+        rate: FrameRate,
+        color_space: Option<&str>,
+        field_order: Option<&str>,
+    ) -> ExportContext<'a> {
+        let video = VideoInfo {
+            width,
+            height,
+            color_space: color_space.map(str::to_owned),
+            color_primaries: None,
+            color_transfer: None,
+            field_order: field_order.map(str::to_owned),
+        };
+        ExportContext::with_timecode(
+            Path::new("/media/input.mp4"),
+            analysis,
+            rate,
+            rate.drop_frames_per_minute().is_some(),
+        )
+        .with_video(video)
+    }
 
     #[test]
     fn contains_asset_format_and_spine_clips() {
@@ -130,5 +157,71 @@ mod tests {
             Rational::new(1001, 30_000).unwrap(),
             context.frame_duration()
         );
+    }
+
+    #[test]
+    fn uses_probed_dimensions_rate_and_color_space() {
+        let analysis = crate::export::tests::fixture();
+        let context = video_context(
+            &analysis,
+            320,
+            240,
+            FrameRate::NTSC_2997,
+            Some("bt709"),
+            None,
+        );
+        let xml = export(&context).unwrap();
+        assert!(xml.contains("name=\"FFVideoFormatRateUndefined\""));
+        assert!(xml.contains("width=\"320\" height=\"240\""));
+        assert!(xml.contains("frameDuration=\"1001/30000s\""));
+        assert!(xml.contains("colorSpace=\"1-1-1 (Rec. 709)\""));
+        assert!(!xml.contains("FFVideoFormat1080p30"));
+
+        let hd = video_context(&analysis, 1920, 1080, FrameRate::NTSC_23976, None, None);
+        let xml = export(&hd).unwrap();
+        assert!(xml.contains("name=\"FFVideoFormat1080p2398\""));
+        assert!(xml.contains("frameDuration=\"1001/24000s\""));
+    }
+
+    #[test]
+    fn snapshot_format_320x240_2997() {
+        let analysis = crate::export::tests::fixture();
+        let context = video_context(
+            &analysis,
+            320,
+            240,
+            FrameRate::NTSC_2997,
+            Some("bt709"),
+            None,
+        );
+        insta::assert_snapshot!("fcpxml_320x240_2997", export(&context).unwrap());
+    }
+
+    #[test]
+    fn snapshot_format_1920x1080_23976() {
+        let analysis = crate::export::tests::fixture();
+        let context = video_context(&analysis, 1920, 1080, FrameRate::NTSC_23976, None, None);
+        insta::assert_snapshot!("fcpxml_1920x1080_23976", export(&context).unwrap());
+    }
+
+    #[test]
+    fn snapshot_format_3840x2160_60() {
+        let analysis = crate::export::tests::fixture();
+        let context = video_context(
+            &analysis,
+            3840,
+            2160,
+            FrameRate::FPS_60,
+            Some("bt2020nc"),
+            None,
+        );
+        insta::assert_snapshot!("fcpxml_3840x2160_60", export(&context).unwrap());
+    }
+
+    #[test]
+    fn snapshot_format_1080x1920_30() {
+        let analysis = crate::export::tests::fixture();
+        let context = video_context(&analysis, 1080, 1920, FrameRate::FPS_30, None, None);
+        insta::assert_snapshot!("fcpxml_1080x1920_30", export(&context).unwrap());
     }
 }

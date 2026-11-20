@@ -8,11 +8,12 @@ Licensed under the [MIT License](LICENSE). Made by Hadagalberto Junior.
 
 ## Status
 
-All four milestones are implemented: exact timing foundation, streaming silence
-analysis, ffmpeg rendering plus six timeline exporters, and documentation with
-criterion benchmarks. The build is checked with `cargo fmt --check`,
-`cargo clippy -- -D warnings` and `cargo test --release` on Linux, Windows and
-macOS.
+All five milestones are implemented: exact timing foundation, streaming silence
+analysis, ffmpeg rendering plus six timeline exporters, documentation with
+criterion benchmarks, and a maintainer fix pass covering source-derived
+FCPXML/Premiere/OTIO video metadata and cross-platform CI. The build is checked
+with `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+and `cargo test --workspace --release` on Linux, Windows and macOS.
 
 ## Installation
 
@@ -129,7 +130,7 @@ jumpcut combine streams by maximum loudness. A quiet guest then stays in even
 when the host is silent:
 
 ```sh
-ffmpeg -i host.wav -i guest.wav -map 0:a -map 1:a -c copy podcast.m4a
+ffmpeg -i host.wav -i guest.wav -map 0:a -map 1:a -c aac podcast.m4a
 jumpcut podcast.m4a --combine-streams --auto --min-silence 0.6s --preview
 jumpcut podcast.m4a -o podcast-cut.m4a --combine-streams --auto --min-silence 0.6s
 ```
@@ -155,8 +156,10 @@ jumpcut interview.mp4 --auto --export premiere -o premiere.xml
 
 Import the XML with **File → Import** (or drag it into the Project panel).
 jumpcut writes an xmeml v4 sequence with video and audio tracks of `clipitem`s.
-For 29.97 material drop-frame labels are emitted automatically; force them on
-other NTSC rates with `--drop-frame`.
+Dimensions come from ffprobe and `ntsc` follows the source frame rate.
+Drop-frame labels are emitted automatically for 29.97/59.94 material; those are
+the only rates SMPTE allows drop-frame counting, so `--drop-frame` is rejected
+elsewhere.
 
 ### Final Cut Pro
 
@@ -166,8 +169,10 @@ jumpcut interview.mp4 --auto --export fcpxml -o finalcut.fcpxml
 
 In Final Cut Pro use **File → Import → XML…**. The document declares a format
 and asset resource and a project whose spine holds one `asset-clip` per kept
-span; sped-up spans carry a `<timeMap>` retime. The original media must remain
-reachable at the referenced path.
+span; sped-up spans carry a `<timeMap>` retime. Format name, dimensions, frame
+duration and colour space are derived from the probed video stream; resolutions
+or rates with no predefined FCP format use `FFVideoFormatRateUndefined`. The
+original media must remain reachable at the referenced path.
 
 ### Other exchanges
 

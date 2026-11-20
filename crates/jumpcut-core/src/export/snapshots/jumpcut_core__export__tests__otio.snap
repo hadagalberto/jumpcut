@@ -9,6 +9,13 @@ expression: "snapshot(ExportFormat::Otio)"
     "rate": 30.0,
     "value": 0
   },
+  "metadata": {
+    "jumpcut": {
+      "height": 1080,
+      "scan": "p",
+      "width": 1920
+    }
+  },
   "name": "input.mp4 - jumpcut",
   "tracks": {
     "OTIO_SCHEMA": "Stack.1",

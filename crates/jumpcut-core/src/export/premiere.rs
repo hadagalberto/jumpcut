@@ -8,19 +8,23 @@
 use crate::export::{ExportContext, ExportError, PRODUCT_NAME, file_url, xml_escape};
 use std::fmt::Write;
 
-/// Default video width written into the sequence format.
-const WIDTH: u32 = 1920;
-/// Default video height written into the sequence format.
-const HEIGHT: u32 = 1080;
-
 /// Renders an xmeml v4 sequence for `context`.
+///
+/// Dimensions come from the probed video stream; `ntsc` reflects whether the
+/// source rate is NTSC, independently of the drop-frame timecode preference.
 ///
 /// # Errors
 ///
 /// Returns [`ExportError::Timecode`] for an unrepresentable timeline boundary.
 pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
     let rate = context.frame_rate.nominal_fps();
-    let ntsc = if context.drop_frame { "TRUE" } else { "FALSE" };
+    let ntsc = if context.frame_rate.is_ntsc() {
+        "TRUE"
+    } else {
+        "FALSE"
+    };
+    let width = context.video.width;
+    let height = context.video.height;
     let name = xml_escape(&context.source_name());
     let total_frames = context.frames(context.output_duration());
     let clips = context.clips();
@@ -42,8 +46,8 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
         out,
         "        <rate><timebase>{rate}</timebase><ntsc>{ntsc}</ntsc></rate>"
     );
-    let _ = writeln!(out, "        <width>{WIDTH}</width>");
-    let _ = writeln!(out, "        <height>{HEIGHT}</height>");
+    let _ = writeln!(out, "        <width>{width}</width>");
+    let _ = writeln!(out, "        <height>{height}</height>");
     out.push_str("      </samplecharacteristics>\n");
     out.push_str("    </format>\n");
 
@@ -74,6 +78,8 @@ fn clip_item(
         .find(|candidate| candidate.index == index)
         .expect("clip index came from this context");
     let rate = context.frame_rate.nominal_fps();
+    let width = context.video.width;
+    let height = context.video.height;
     let source_in = context.frames(clip.source_start);
     let source_out = context.frames(clip.source_end);
     let record_in = context.frames(clip.record_start);
@@ -110,7 +116,7 @@ fn clip_item(
     } else {
         let _ = writeln!(
             out,
-            "            <video><duration>{source_out}</duration><width>{WIDTH}</width><height>{HEIGHT}</height></video>"
+            "            <video><duration>{source_out}</duration><width>{width}</width><height>{height}</height></video>"
         );
     }
     out.push_str("          </media>\n");
@@ -131,6 +137,7 @@ fn clip_item(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::export::VideoInfo;
     use crate::rational::FrameRate;
     use std::path::Path;
 
@@ -164,5 +171,52 @@ mod tests {
         let xml = export(&context).unwrap();
         assert!(xml.contains("<ntsc>TRUE</ntsc>"));
         assert!(xml.contains("00:00:02;00"));
+    }
+
+    #[test]
+    fn sample_characteristics_use_probed_dimensions() {
+        let analysis = crate::export::tests::fixture();
+        let video = VideoInfo {
+            width: 320,
+            height: 240,
+            ..VideoInfo::DEFAULT
+        };
+        let context = ExportContext::with_timecode(
+            Path::new("/media/input.mp4"),
+            &analysis,
+            FrameRate::FPS_30,
+            false,
+        )
+        .with_video(video);
+        let xml = export(&context).unwrap();
+        assert!(xml.contains("<width>320</width>"));
+        assert!(xml.contains("<height>240</height>"));
+        // One sequence characteristic plus one per video clip item.
+        assert_eq!(xml.matches("<width>320</width>").count(), 4);
+        assert!(!xml.contains("<width>1920</width>"));
+    }
+
+    #[test]
+    fn ntsc_flag_and_timebase_follow_frame_rate_not_drop_frame_preference() {
+        let analysis = crate::export::tests::fixture();
+        let context = ExportContext::with_timecode(
+            Path::new("/media/input.mp4"),
+            &analysis,
+            FrameRate::NTSC_2997,
+            false,
+        );
+        let xml = export(&context).unwrap();
+        assert!(xml.contains("<ntsc>TRUE</ntsc>"));
+        assert!(xml.contains("<timebase>30</timebase>"));
+
+        let context = ExportContext::with_timecode(
+            Path::new("/media/input.mp4"),
+            &analysis,
+            FrameRate::NTSC_23976,
+            false,
+        );
+        let xml = export(&context).unwrap();
+        assert!(xml.contains("<ntsc>TRUE</ntsc>"));
+        assert!(xml.contains("<timebase>24</timebase>"));
     }
 }

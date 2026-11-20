@@ -448,6 +448,12 @@ impl FrameRate {
         u32::try_from(self.0.round()).unwrap_or(u32::MAX)
     }
 
+    /// Whether this is an NTSC (non-integer) frame rate such as 29.97.
+    #[must_use]
+    pub const fn is_ntsc(self) -> bool {
+        self.0.den() != 1
+    }
+
     /// Number of timecode labels dropped per minute for drop-frame timecode.
     ///
     /// Returns `None` when this rate is integer-locked and therefore cannot
@@ -524,6 +530,11 @@ mod tests {
         assert_eq!(FrameRate::NTSC_5994.drop_frames_per_minute(), Some(4));
         assert_eq!(FrameRate::FPS_30.drop_frames_per_minute(), None);
         assert_eq!(FrameRate::FPS_25.drop_frames_per_minute(), None);
+        assert!(FrameRate::NTSC_23976.is_ntsc());
+        assert!(FrameRate::NTSC_2997.is_ntsc());
+        assert!(FrameRate::NTSC_5994.is_ntsc());
+        assert!(!FrameRate::FPS_30.is_ntsc());
+        assert!(!FrameRate::FPS_25.is_ntsc());
     }
 
     #[test]

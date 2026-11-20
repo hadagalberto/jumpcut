@@ -9,11 +9,13 @@ Licenciado sob a [Licença MIT](LICENSE). Por Hadagalberto Junior.
 
 ## Status
 
-Os quatro marcos estão implementados: base de tempo exata, análise de silêncio
-em stream, renderização com ffmpeg e seis exportadores de timeline, além de
-documentação com benchmarks criterion. O build é verificado com
-`cargo fmt --check`, `cargo clippy -- -D warnings` e `cargo test --release` em
-Linux, Windows e macOS.
+Os cinco marcos estão implementados: base de tempo exata, análise de silêncio
+em stream, renderização com ffmpeg e seis exportadores de timeline,
+documentação com benchmarks criterion e uma passada de correções que deriva os
+metadados de vídeo de FCPXML/Premiere/OTIO do arquivo de origem e torna a CI
+cross-platform. O build é verificado com `cargo fmt --check`,
+`cargo clippy --workspace --all-targets -- -D warnings` e
+`cargo test --workspace --release` em Linux, Windows e macOS.
 
 ## Instalação
 
@@ -130,7 +132,7 @@ fluxos de áudio e deixe o jumpcut combiná-los pelo maior loudness. Assim um
 convidado baixo continua presente mesmo quando o apresentador está silencioso:
 
 ```sh
-ffmpeg -i host.wav -i guest.wav -map 0:a -map 1:a -c copy podcast.m4a
+ffmpeg -i host.wav -i guest.wav -map 0:a -map 1:a -c aac podcast.m4a
 jumpcut podcast.m4a --combine-streams --auto --min-silence 0.6s --preview
 jumpcut podcast.m4a -o podcast-corte.m4a --combine-streams --auto --min-silence 0.6s
 ```
@@ -156,8 +158,10 @@ jumpcut entrevista.mp4 --auto --export premiere -o premiere.xml
 
 Importe o XML com **Arquivo → Importar** (ou arraste para o painel Projeto). O
 jumpcut gera uma sequência xmeml v4 com trilhas de vídeo e áudio de
-`clipitem`s. Para material 29.97 os rótulos drop-frame são emitidos
-automaticamente; force-os em outras taxas NTSC com `--drop-frame`.
+`clipitem`s. As dimensões vêm do ffprobe e `ntsc` segue a taxa de quadros da
+fonte. Rótulos drop-frame são emitidos automaticamente para 29.97/59.94, as
+únicas taxas em que SMPTE permite contagem drop-frame; `--drop-frame` é
+rejeitado nas demais.
 
 ### Final Cut Pro
 
@@ -167,8 +171,11 @@ jumpcut entrevista.mp4 --auto --export fcpxml -o finalcut.fcpxml
 
 No Final Cut Pro use **Arquivo → Importar → XML…**. O documento declara um
 formato e um asset em `resources` e um projeto cujo spine contém um
-`asset-clip` por trecho mantido; trechos acelerados levam um `<timeMap>`. A
-mídia original precisa continuar acessível no caminho referenciado.
+`asset-clip` por trecho mantido; trechos acelerados levam um `<timeMap>`. Nome
+do formato, dimensões, duração do quadro e espaço de cor são derivados do stream
+de vídeo sondado; resoluções ou taxas sem formato FCP predefinido usam
+`FFVideoFormatRateUndefined`. A mídia original precisa continuar acessível no
+caminho referenciado.
 
 ### Outras trocas
 

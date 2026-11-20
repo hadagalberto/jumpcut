@@ -8,6 +8,19 @@ use serde_json::{Value, json};
 
 use crate::export::{ExportContext, ExportError, PRODUCT_NAME, file_url};
 
+/// Builds the source video metadata attached to the OTIO timeline.
+fn video_metadata(context: &ExportContext<'_>) -> Value {
+    let mut metadata = json!({
+        "width": context.video.width,
+        "height": context.video.height,
+        "scan": context.video.scan().code(),
+    });
+    if let Some(color_space) = context.video.fcp_color_space() {
+        metadata["colorSpace"] = json!(color_space);
+    }
+    metadata
+}
+
 /// Renders `OpenTimelineIO` JSON for `context`.
 ///
 /// # Errors
@@ -59,6 +72,7 @@ pub fn export(context: &ExportContext<'_>) -> Result<String, ExportError> {
     let timeline = json!({
         "OTIO_SCHEMA": "Timeline.1",
         "name": name,
+        "metadata": { "jumpcut": video_metadata(context) },
         "global_start_time": zero,
         "tracks": {
             "OTIO_SCHEMA": "Stack.1",
@@ -119,5 +133,33 @@ mod tests {
             tracks[0]["children"][1]["source_range"]["start_time"]["value"],
             90
         );
+    }
+
+    #[test]
+    fn metadata_carries_probed_video_properties() {
+        use crate::export::VideoInfo;
+
+        let analysis = crate::export::tests::fixture();
+        let video = VideoInfo {
+            width: 3840,
+            height: 2160,
+            color_space: Some("bt2020nc".to_owned()),
+            color_primaries: None,
+            color_transfer: None,
+            field_order: Some("tt".to_owned()),
+        };
+        let context = ExportContext::with_timecode(
+            Path::new("/media/input.mp4"),
+            &analysis,
+            FrameRate::NTSC_2997,
+            true,
+        )
+        .with_video(video);
+        let value: Value = serde_json::from_str(&export(&context).unwrap()).unwrap();
+        let metadata = &value["metadata"]["jumpcut"];
+        assert_eq!(metadata["width"], 3840);
+        assert_eq!(metadata["height"], 2160);
+        assert_eq!(metadata["colorSpace"], "1-1-1 (Rec. 2020)");
+        assert_eq!(metadata["scan"], "i");
     }
 }

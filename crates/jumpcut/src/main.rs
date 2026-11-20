@@ -9,8 +9,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use jumpcut_core::{
     AnalysisConfig, Dbfs, DecodeOptions, ExportContext, ExportFormat, FrameRate, RenderOptions,
-    Seconds, StreamSelection, ThresholdSelection, Timecode, analyze_file, export, parse_margins,
-    preview, probe_file, render,
+    Seconds, StreamSelection, ThresholdSelection, Timecode, VideoInfo, analyze_file, export,
+    parse_margins, preview, probe_file, render,
 };
 
 #[derive(Debug, Parser)]
@@ -235,12 +235,20 @@ fn run_render(args: RenderArgs) -> Result<()> {
     }
 
     if let Some(format) = format {
+        let media = probe_file(&input)?;
         let frame_rate = config
             .frame_rate
             .or(analysis.plan.frame_rate)
+            .or_else(|| media.video.as_ref().and_then(|video| video.frame_rate))
             .unwrap_or(FrameRate::FPS_30);
         let use_drop_frame = drop_frame || frame_rate.drop_frames_per_minute().is_some();
-        let context = ExportContext::with_timecode(&input, &analysis, frame_rate, use_drop_frame);
+        let video = media
+            .video
+            .as_ref()
+            .map(VideoInfo::from_stream)
+            .unwrap_or_default();
+        let context = ExportContext::with_timecode(&input, &analysis, frame_rate, use_drop_frame)
+            .with_video(video);
         let text = export(&context, format)?;
         match output {
             Some(path) => {

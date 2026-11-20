@@ -24,6 +24,9 @@ pub mod fcpxml;
 pub mod json;
 pub mod otio;
 pub mod premiere;
+pub mod video;
+
+pub use video::{Scan, VideoInfo};
 
 /// Errors produced while formatting an edit timeline.
 #[derive(Debug, Error)]
@@ -152,6 +155,8 @@ pub struct ExportContext<'a> {
     pub frame_rate: FrameRate,
     /// Whether timecodes count in drop-frame mode.
     pub drop_frame: bool,
+    /// Source video characteristics used by the NLE exporters.
+    pub video: VideoInfo,
 }
 
 impl<'a> ExportContext<'a> {
@@ -165,6 +170,7 @@ impl<'a> ExportContext<'a> {
             analysis,
             frame_rate,
             drop_frame: frame_rate.drop_frames_per_minute().is_some(),
+            video: VideoInfo::DEFAULT,
         }
     }
 
@@ -181,7 +187,15 @@ impl<'a> ExportContext<'a> {
             analysis,
             frame_rate,
             drop_frame,
+            video: VideoInfo::DEFAULT,
         }
+    }
+
+    /// Attaches the source video characteristics read by ffprobe.
+    #[must_use]
+    pub fn with_video(mut self, video: VideoInfo) -> Self {
+        self.video = video;
+        self
     }
 
     /// All retained clips with their source and record positions.
