@@ -6,6 +6,22 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added (milestone 2 — analysis)
+
+- Streaming frame analysis: configurable RMS/peak dBFS windows and hops
+  (defaults 30 ms / 10 ms) with bounded PCM memory.
+- Absolute (`--threshold`) and adaptive (`--auto`) thresholds; the adaptive
+  formula uses the 10th/90th loudness percentiles and is documented in the
+  `analysis::threshold` module.
+- Two-level hysteresis, `--min-silence`, `--min-clip`, one- or two-sided
+  `--margin`, short-gap merging and exact frame snapping (including NTSC rates).
+- `--silent-speed` planning with `atempo` factor chaining for speeds above 4x.
+- Single-stream and max-combined multi-stream analysis via `--audio-stream` /
+  `--combine-streams`.
+- `analyze` subcommand with terminal preview (loudness sparkline) and `--json`.
+- Pure-Rust synthetic PCM tests with exact segments, proptest invariants and a
+  two-hour release-mode performance test.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

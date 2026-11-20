@@ -8,14 +8,14 @@ Licensed under the [MIT License](LICENSE). Made by Hadagalberto Junior.
 
 ## Status
 
-Milestone 1 (foundation) is implemented. The full silence-removal pipeline and
-the timeline exporters are planned for later milestones.
+Milestones 1 (foundation) and 2 (analysis) are implemented. Rendering and the
+timeline exporters are planned for later milestones.
 
 ## Workspace
 
 | Crate | Purpose |
 | --- | --- |
-| `crates/jumpcut-core` | Exact rational timing, timecode, ffprobe metadata, streaming PCM decode |
+| `crates/jumpcut-core` | Exact rational timing, timecode, ffprobe metadata, streaming PCM decode, silence analysis and edit planning |
 | `crates/jumpcut` | clap-based command-line interface |
 
 ## Requirements
@@ -37,7 +37,7 @@ cargo test --workspace
 
 CI runs those checks on Ubuntu, Windows and macOS with ffmpeg installed.
 
-## CLI (milestone 1)
+## CLI
 
 ```sh
 # Show exact media metadata from ffprobe.
@@ -46,7 +46,15 @@ cargo run -p jumpcut -- probe input.mp4 --json
 
 # Format frame 1800 as 29.97 drop-frame timecode -> 00:01:00;02
 cargo run -p jumpcut -- timecode 1800 --rate 29.97 --drop-frame
+
+# Preview the silence-removal plan (no rendering).
+cargo run -p jumpcut -- analyze input.mp4 --threshold=-35dB
+cargo run -p jumpcut -- analyze input.mp4 --auto --margin 0.08s,0.15s
+cargo run -p jumpcut -- analyze input.mp4 --silent-speed 4 --json
 ```
+
+Negative decibel values must use `--threshold=-35dB` so clap does not read the
+minus sign as a new flag.
 
 ## Library highlights
 
@@ -57,6 +65,9 @@ cargo run -p jumpcut -- timecode 1800 --rate 29.97 --drop-frame
 - `probe_file`: ffprobe JSON decoded into exact durations and frame rates.
 - `PcmDecoder`: streams `f32le` samples from ffmpeg through a pipe in bounded
   chunks; stderr is drained concurrently and checked on exit.
+- `analysis`: streaming RMS/peak frames, absolute or documented adaptive
+  threshold, hysteresis, margins, gap merging, exact frame snapping and
+  silent-speed planning (`--auto` uses the 10th/90th percentile midpoint).
 
 See [README.pt-BR.md](README.pt-BR.md) for Portuguese documentation,
 [CHANGELOG.md](CHANGELOG.md) for release notes and

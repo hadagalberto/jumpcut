@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 6379939c35d85df7118bbdbd3c4fdd8d02fb8720b8eda2728569679f32d41fac # shrinks to levels = [-140.0, -140.0, -6.0, -140.0, -140.0, -140.0, -140.0, -140.0, -140.0, -6.0, -140.0, -140.0, -140.0, -140.0, -140.0, -6.0, -140.0, -6.0, -140.0, -140.0, -140.0, -140.0, -140.0, -140.0, -140.0, -6.0, -140.0, -140.0, -140.0, -140.0, -140.0, -140.0, -6.0, -140.0, -140.0, -140.0, -140.0, -140.0, -140.0, -6.0, -140.0, -140.0, -140.0], min_silence = Rational { num: 0, den: 1 }, min_clip = Rational { num: 1, den: 50 }, margin = Rational { num: 1, den: 25 }, merge_gap = Rational { num: 0, den: 1 }, snap = false, speed = 1

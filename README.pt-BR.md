@@ -8,14 +8,14 @@ Licenciado sob a [Licença MIT](LICENSE). Por Hadagalberto Junior.
 
 ## Status
 
-O marco 1 (fundação) está implementado. O pipeline completo de remoção de
-silêncio e os exportadores de timeline virão em marcos posteriores.
+Os marcos 1 (fundação) e 2 (análise) estão implementados. A renderização e os
+exportadores de timeline virão em marcos posteriores.
 
 ## Estrutura
 
 | Crate | Função |
 | --- | --- |
-| `crates/jumpcut-core` | Tempo racional exato, timecode, metadados via ffprobe, decodificação PCM em stream |
+| `crates/jumpcut-core` | Tempo racional exato, timecode, ffprobe, PCM em stream, análise de silêncio e planejamento de cortes |
 | `crates/jumpcut` | Interface de linha de comando com clap |
 
 ## Requisitos
@@ -37,7 +37,7 @@ cargo test --workspace
 
 A CI executa essas verificações em Ubuntu, Windows e macOS com ffmpeg instalado.
 
-## CLI (marco 1)
+## CLI
 
 ```sh
 # Mostra metadados exatos via ffprobe.
@@ -46,7 +46,15 @@ cargo run -p jumpcut -- probe input.mp4 --json
 
 # Formata o frame 1800 como timecode drop-frame 29.97 -> 00:01:00;02
 cargo run -p jumpcut -- timecode 1800 --rate 29.97 --drop-frame
+
+# Pré-visualiza o plano de remoção de silêncio (sem renderizar).
+cargo run -p jumpcut -- analyze input.mp4 --threshold=-35dB
+cargo run -p jumpcut -- analyze input.mp4 --auto --margin 0.08s,0.15s
+cargo run -p jumpcut -- analyze input.mp4 --silent-speed 4 --json
 ```
+
+Valores negativos em dB exigem `--threshold=-35dB` para que o clap não interprete
+o sinal de menos como uma nova flag.
 
 ## Destaques da biblioteca
 
@@ -56,3 +64,6 @@ cargo run -p jumpcut -- timecode 1800 --rate 29.97 --drop-frame
 - `probe_file`: JSON do ffprobe convertido em durações e taxas exatas.
 - `PcmDecoder`: transmite amostras `f32le` do ffmpeg por pipe em blocos limitados;
   a stderr é drenada simultaneamente e verificada ao final.
+- `analysis`: frames RMS/pico em dBFS, limiar absoluto ou adaptativo (documentado),
+  histerese, margens, fusão de lacunas, snap exato a frames e aceleração de
+  silêncios (`--auto` usa o ponto médio dos percentis 10 e 90).
