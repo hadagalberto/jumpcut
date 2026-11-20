@@ -8,8 +8,8 @@ Licensed under the [MIT License](LICENSE). Made by Hadagalberto Junior.
 
 ## Status
 
-Milestones 1 (foundation) and 2 (analysis) are implemented. Rendering and the
-timeline exporters are planned for later milestones.
+Milestones 1 (foundation), 2 (analysis) and 3 (outputs) are implemented.
+Rendering, preview and all timeline exporters are available.
 
 ## Workspace
 
@@ -51,6 +51,24 @@ cargo run -p jumpcut -- timecode 1800 --rate 29.97 --drop-frame
 cargo run -p jumpcut -- analyze input.mp4 --threshold=-35dB
 cargo run -p jumpcut -- analyze input.mp4 --auto --margin 0.08s,0.15s
 cargo run -p jumpcut -- analyze input.mp4 --silent-speed 4 --json
+
+# Render with ffmpeg (default: libx264 -crf 18, aac 192k).
+cargo run -p jumpcut -- input.mp4 -o cut.mp4
+cargo run -p jumpcut -- input.mp4 -o cut.mp4 --hw-encoder h264_nvenc
+
+# Stream-copy on keyframes (warns about imprecision).
+cargo run -p jumpcut -- input.mp4 -o cut.mp4 --copy
+
+# Print a terminal summary with a loudness sparkline, without rendering.
+cargo run -p jumpcut -- input.mp4 --preview
+
+# Write an edit timeline to stdout, or to a file with -o.
+cargo run -p jumpcut -- input.mp4 --export fcpxml -o cut.fcpxml
+cargo run -p jumpcut -- input.mp4 --export premiere
+cargo run -p jumpcut -- input.mp4 --export edl --drop-frame
+cargo run -p jumpcut -- input.mp4 --export otio
+cargo run -p jumpcut -- input.mp4 --export concat
+cargo run -p jumpcut -- input.mp4 --export json
 ```
 
 Negative decibel values must use `--threshold=-35dB` so clap does not read the
@@ -68,6 +86,12 @@ minus sign as a new flag.
 - `analysis`: streaming RMS/peak frames, absolute or documented adaptive
   threshold, hysteresis, margins, gap merging, exact frame snapping and
   silent-speed planning (`--auto` uses the 10th/90th percentile midpoint).
+- `render`: chooses a `filter_complex` graph for small plans (and any
+  silent-speed retime) or a concat-demuxer join for large ones; supports
+  `--copy` with a keyframe-imprecision warning and encoder passthrough.
+- `export`: FCPXML 1.10, Premiere xmeml v4, CMX3600 EDL (drop-frame), OTIO JSON,
+  ffmpeg concat lists and machine-readable timeline JSON.
+- `preview`: terminal summary with an ASCII loudness sparkline.
 
 See [README.pt-BR.md](README.pt-BR.md) for Portuguese documentation,
 [CHANGELOG.md](CHANGELOG.md) for release notes and

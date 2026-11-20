@@ -8,8 +8,9 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use jumpcut_core::{
-    Analysis, AnalysisConfig, Dbfs, DecodeOptions, FrameRate, Seconds, StreamSelection,
-    ThresholdSelection, Timecode, analyze_file, parse_margins, probe_file, sparkline,
+    AnalysisConfig, Dbfs, DecodeOptions, ExportContext, ExportFormat, FrameRate, RenderOptions,
+    Seconds, StreamSelection, ThresholdSelection, Timecode, analyze_file, export, parse_margins,
+    preview, probe_file, render,
 };
 
 #[derive(Debug, Parser)]
@@ -17,11 +18,15 @@ use jumpcut_core::{
     name = "jumpcut",
     version,
     about = "Remove silences from videos and podcasts, fast",
-    long_about = "Single-binary CLI for silence removal and NLE timeline export."
+    long_about = "Single-binary CLI for silence removal, ffmpeg rendering and NLE timeline export.",
+    subcommand_precedence_over_arg = true
 )]
 struct Cli {
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
+    /// Options for the top-level `jumpcut INPUT -o OUTPUT` form.
+    #[command(flatten)]
+    render: RenderArgs,
 }
 
 #[derive(Debug, Subcommand)]
@@ -45,15 +50,15 @@ enum Command {
         #[arg(long)]
         drop_frame: bool,
     },
-    /// Analyse audio and plan silence removal without rendering.
+    /// Analyse audio and preview silence removal without rendering.
     Analyze(Box<AnalyzeArgs>),
+    /// Render or export an edit timeline (also available as the top-level form).
+    Render(Box<RenderArgs>),
 }
 
-/// Arguments for the `analyze` subcommand, boxed to keep [`Command`] small.
+/// Analysis knobs shared by the `analyze` and `render` commands.
 #[derive(Debug, clap::Args)]
-struct AnalyzeArgs {
-    /// Input media file.
-    input: PathBuf,
+struct AnalyzeOptions {
     /// Measurement window length (default 30 ms).
     #[arg(long)]
     window: Option<Seconds>,
@@ -93,15 +98,51 @@ struct AnalyzeArgs {
     /// Override the frame rate used for exact boundary snapping.
     #[arg(long, value_name = "RATE")]
     fps: Option<FrameRate>,
-    /// Emit machine-readable JSON instead of a terminal preview.
+}
+
+/// Arguments for the `analyze` subcommand, boxed to keep [`Command`] small.
+#[derive(Debug, clap::Args)]
+struct AnalyzeArgs {
+    /// Input media file.
+    input: PathBuf,
+    #[command(flatten)]
+    options: AnalyzeOptions,
+    /// Emit machine-readable analysis JSON instead of a terminal preview.
     #[arg(long)]
     json: bool,
+}
+
+/// Arguments for rendering and exporting, also flattened at the top level.
+#[derive(Debug, clap::Args)]
+struct RenderArgs {
+    /// Input media file (top-level render/export form).
+    input: Option<PathBuf>,
+    /// Rendered media file, or destination for `--export`.
+    #[arg(short, long, value_name = "FILE")]
+    output: Option<PathBuf>,
+    #[command(flatten)]
+    options: AnalyzeOptions,
+    /// Write an edit timeline instead of rendering.
+    #[arg(long, value_name = "FORMAT")]
+    export: Option<ExportFormat>,
+    /// Print a terminal summary (segments, removed time, sparkline).
+    #[arg(long)]
+    preview: bool,
+    /// Stream-copy codecs; cuts may snap to the nearest keyframe (warns).
+    #[arg(long)]
+    copy: bool,
+    /// Video encoder passed through to ffmpeg, e.g. `h264_nvenc`.
+    #[arg(long, value_name = "ENCODER")]
+    hw_encoder: Option<String>,
+    /// Force drop-frame timecodes in exported timelines.
+    #[arg(long)]
+    drop_frame: bool,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Command::Probe { input, json } => {
+        Some(Command::Probe { input, json }) => {
             let info = probe_file(&input)?;
             if json {
                 println!("{}", serde_json::to_string_pretty(&info)?);
@@ -109,69 +150,129 @@ fn main() -> Result<()> {
                 print_probe_report(&info);
             }
         }
-        Command::Timecode {
+        Some(Command::Timecode {
             frames,
             rate,
             drop_frame,
-        } => {
+        }) => {
             let timecode = Timecode::new(frames, rate, drop_frame)?;
             println!("{}", timecode.format());
         }
-        Command::Analyze(args) => {
-            let AnalyzeArgs {
-                input,
-                window,
-                hop,
-                threshold,
-                auto,
-                hysteresis,
-                min_silence,
-                min_clip,
-                margin,
-                merge_gap,
-                silent_speed,
-                audio_stream,
-                combine_streams,
-                fps,
-                json,
-            } = *args;
-            let mut frame = jumpcut_core::FrameConfig::default();
-            if let Some(window) = window {
-                frame.window = window;
-            }
-            if let Some(hop) = hop {
-                frame.hop = hop;
-            }
-            let config = AnalysisConfig {
-                frame,
-                threshold: if auto {
-                    ThresholdSelection::Auto
-                } else {
-                    ThresholdSelection::Absolute(threshold.map_or(-35.0, |value| value.0))
-                },
-                hysteresis_db: hysteresis,
-                min_silence: min_silence.0,
-                min_clip: min_clip.0,
-                margins: parse_margins(&margin)?,
-                merge_gap: merge_gap.0,
-                silent_speed,
-                frame_rate: fps,
-            };
-            config.validate()?;
-            let selection = if combine_streams {
-                StreamSelection::CombineMax
-            } else {
-                StreamSelection::Single(audio_stream.unwrap_or(0))
-            };
-            let analysis = analyze_file(&input, selection, DecodeOptions::default(), config)
-                .with_context(|| format!("failed to analyse {}", input.display()))?;
-            if json {
-                println!("{}", serde_json::to_string_pretty(&analysis)?);
-            } else {
-                print_analysis_report(&analysis);
-            }
-        }
+        Some(Command::Analyze(args)) => run_analyze(*args)?,
+        Some(Command::Render(args)) => run_render(*args)?,
+        None => run_render(cli.render)?,
     }
+    Ok(())
+}
+
+fn settings(options: &AnalyzeOptions) -> Result<(AnalysisConfig, StreamSelection)> {
+    let mut frame = jumpcut_core::FrameConfig::default();
+    if let Some(window) = options.window {
+        frame.window = window;
+    }
+    if let Some(hop) = options.hop {
+        frame.hop = hop;
+    }
+    let config = AnalysisConfig {
+        frame,
+        threshold: if options.auto {
+            ThresholdSelection::Auto
+        } else {
+            ThresholdSelection::Absolute(options.threshold.map_or(-35.0, |value| value.0))
+        },
+        hysteresis_db: options.hysteresis,
+        min_silence: options.min_silence.0,
+        min_clip: options.min_clip.0,
+        margins: parse_margins(&options.margin)?,
+        merge_gap: options.merge_gap.0,
+        silent_speed: options.silent_speed,
+        frame_rate: options.fps,
+    };
+    config.validate()?;
+    let selection = if options.combine_streams {
+        StreamSelection::CombineMax
+    } else {
+        StreamSelection::Single(options.audio_stream.unwrap_or(0))
+    };
+    Ok((config, selection))
+}
+
+fn run_analyze(args: AnalyzeArgs) -> Result<()> {
+    let AnalyzeArgs {
+        input,
+        options,
+        json,
+    } = args;
+    let (config, selection) = settings(&options)?;
+    let analysis = analyze_file(&input, selection, DecodeOptions::default(), config)
+        .with_context(|| format!("failed to analyse {}", input.display()))?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&analysis)?);
+    } else {
+        print!("{}", preview(&analysis));
+    }
+    Ok(())
+}
+
+fn run_render(args: RenderArgs) -> Result<()> {
+    let RenderArgs {
+        input,
+        output,
+        options,
+        export: format,
+        preview: show_preview,
+        copy,
+        hw_encoder,
+        drop_frame,
+    } = args;
+    let input = input.context("missing input file; usage: jumpcut INPUT -o OUTPUT")?;
+    let (config, selection) = settings(&options)?;
+    let analysis = analyze_file(&input, selection, DecodeOptions::default(), config.clone())
+        .with_context(|| format!("failed to analyse {}", input.display()))?;
+
+    if show_preview {
+        print!("{}", preview(&analysis));
+    }
+
+    if let Some(format) = format {
+        let frame_rate = config
+            .frame_rate
+            .or(analysis.plan.frame_rate)
+            .unwrap_or(FrameRate::FPS_30);
+        let use_drop_frame = drop_frame || frame_rate.drop_frames_per_minute().is_some();
+        let context = ExportContext::with_timecode(&input, &analysis, frame_rate, use_drop_frame);
+        let text = export(&context, format)?;
+        match output {
+            Some(path) => {
+                std::fs::write(&path, text)
+                    .with_context(|| format!("failed to write {}", path.display()))?;
+                println!("wrote {format} timeline to {}", path.display());
+            }
+            None => print!("{text}"),
+        }
+        return Ok(());
+    }
+
+    if show_preview && output.is_none() {
+        return Ok(());
+    }
+    let output = output.context("output file required (-o OUTPUT) when rendering")?;
+    let render_options = RenderOptions {
+        copy,
+        encoder: hw_encoder,
+        ..RenderOptions::default()
+    };
+    let outcome = render(&input, &output, &analysis, &render_options)?;
+    for warning in outcome.warnings {
+        eprintln!("warning: {warning}");
+    }
+    println!(
+        "rendered {} -> {} ({} strategy, {:.3} s)",
+        input.display(),
+        output.display(),
+        outcome.strategy,
+        analysis.output_duration().to_f64()
+    );
     Ok(())
 }
 
@@ -198,49 +299,5 @@ fn print_probe_report(info: &jumpcut_core::MediaInfo) {
             "audio:    stream {} {} {} Hz, {} ch",
             audio.index, audio.codec, audio.sample_rate, audio.channels
         );
-    }
-}
-
-fn print_analysis_report(analysis: &Analysis) {
-    let source = analysis.plan.source_duration.to_f64();
-    let removed = analysis.removed_duration().to_f64();
-    let output = analysis.output_duration().to_f64();
-    let percent = if source > 0.0 {
-        removed / source * 100.0
-    } else {
-        0.0
-    };
-    println!("source:   {source:.3} s");
-    println!(
-        "threshold:{:+.1} dBFS{}",
-        analysis.thresholds.base_dbfs,
-        if analysis.thresholds.adaptive {
-            " (auto)"
-        } else {
-            ""
-        }
-    );
-    println!(
-        "kept:     {} segment(s)",
-        analysis.plan.kept_segments().len()
-    );
-    println!("removed:  {removed:.3} s ({percent:.1}%)");
-    println!("output:   {output:.3} s");
-    println!("loudness: {}", sparkline(&analysis.frames, 64));
-    for (index, edit) in analysis.plan.edits.iter().enumerate() {
-        let span = edit.span();
-        let start = span.start.to_f64();
-        let end = span.end.to_f64();
-        match edit {
-            jumpcut_core::Edit::Keep { .. } => {
-                println!("  {index:>3}: keep  {start:8.3} .. {end:8.3}");
-            }
-            jumpcut_core::Edit::Cut { .. } => {
-                println!("  {index:>3}: cut   {start:8.3} .. {end:8.3}");
-            }
-            jumpcut_core::Edit::SpeedUp { speed, .. } => {
-                println!("  {index:>3}: speed {start:8.3} .. {end:8.3} @ {speed}x");
-            }
-        }
     }
 }

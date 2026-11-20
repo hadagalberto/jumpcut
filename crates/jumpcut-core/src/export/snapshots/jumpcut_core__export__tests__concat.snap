@@ -1,0 +1,14 @@
+---
+source: crates/jumpcut-core/src/export/mod.rs
+expression: "snapshot(ExportFormat::Concat)"
+---
+ffconcat version 1.0
+file '/media/input.mp4'
+inpoint 0.000000
+outpoint 2.000000
+file '/media/input.mp4'
+inpoint 3.000000
+outpoint 5.000000
+file '/media/input.mp4'
+inpoint 6.000000
+outpoint 7.000000

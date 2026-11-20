@@ -1,0 +1,15 @@
+---
+source: crates/jumpcut-core/src/export/mod.rs
+expression: "crate::preview::render_preview(&analysis, 32)"
+---
+source:    7.000 s
+threshold:-35.0 dBFS
+segments:  3 kept, 2 cut
+removed:   2.000 s (28.6%)
+output:    5.000 s
+loudness:  @@@@@@@@@.    @@@@@@@@@    .@@@@
+    0: keep     0.000 ..    2.000
+    1: cut      2.000 ..    3.000
+    2: keep     3.000 ..    5.000
+    3: cut      5.000 ..    6.000
+    4: keep     6.000 ..    7.000

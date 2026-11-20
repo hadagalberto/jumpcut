@@ -6,6 +6,23 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added (milestone 3 — outputs)
+
+- ffmpeg rendering with automatic strategy selection: a `filter_complex` graph
+  for small plans and silent-speed retimes, a concat-demuxer join for large
+  plans. Re-encoding defaults to `libx264 -crf 18` / `aac 192k`; `--copy`
+  stream-copies codecs with a keyframe-imprecision warning; `--hw-encoder`
+  passes an encoder name through to ffmpeg.
+- Exact `atempo` chaining for `--silent-speed`, with a retimed video frame rate
+  so output durations stay accurate.
+- Timeline exporters: FCPXML 1.10 (asset/format/spine, `N/Ds` rational seconds),
+  Premiere xmeml v4 (sequence + clipitems), CMX3600 EDL with drop-frame labels,
+  OTIO JSON, ffmpeg concat lists and machine-readable timeline JSON.
+- `--preview` terminal summary with segment counts, removed time/percentage and
+  an ASCII loudness sparkline; `--export` writes timelines to stdout or a file.
+- `insta` snapshots for all six exporters plus the preview, and end-to-end
+  render tests that generate media and assert output duration via ffprobe.
+
 ### Added (milestone 2 — analysis)
 
 - Streaming frame analysis: configurable RMS/peak dBFS windows and hops

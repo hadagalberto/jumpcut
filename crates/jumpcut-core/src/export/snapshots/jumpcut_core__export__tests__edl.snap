@@ -1,0 +1,13 @@
+---
+source: crates/jumpcut-core/src/export/mod.rs
+expression: "snapshot(ExportFormat::Edl)"
+---
+TITLE: jumpcut - input.mp4
+FCM: NON-DROP FRAME
+
+001  AX  AA/V  C       00:00:00:00 00:00:02:00 00:00:00:00 00:00:02:00
+* FROM CLIP NAME: input.mp4
+002  AX  AA/V  C       00:00:03:00 00:00:05:00 00:00:02:00 00:00:04:00
+* FROM CLIP NAME: input.mp4
+003  AX  AA/V  C       00:00:06:00 00:00:07:00 00:00:04:00 00:00:05:00
+* FROM CLIP NAME: input.mp4

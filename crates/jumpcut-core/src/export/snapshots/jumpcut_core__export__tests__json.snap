@@ -1,0 +1,55 @@
+---
+source: crates/jumpcut-core/src/export/mod.rs
+expression: "snapshot(ExportFormat::Json)"
+---
+{
+  "drop_frame": false,
+  "edits": [
+    {
+      "kind": "keep",
+      "record_duration": "2/1s",
+      "record_end": "2/1s",
+      "record_start": "0/1s",
+      "source_duration": "2/1s",
+      "source_end": "2/1s",
+      "source_start": "0/1s"
+    },
+    {
+      "kind": "cut",
+      "source_duration": "1/1s",
+      "source_end": "3/1s",
+      "source_start": "2/1s"
+    },
+    {
+      "kind": "keep",
+      "record_duration": "2/1s",
+      "record_end": "4/1s",
+      "record_start": "2/1s",
+      "source_duration": "2/1s",
+      "source_end": "5/1s",
+      "source_start": "3/1s"
+    },
+    {
+      "kind": "cut",
+      "source_duration": "1/1s",
+      "source_end": "6/1s",
+      "source_start": "5/1s"
+    },
+    {
+      "kind": "keep",
+      "record_duration": "1/1s",
+      "record_end": "5/1s",
+      "record_start": "4/1s",
+      "source_duration": "1/1s",
+      "source_end": "7/1s",
+      "source_start": "6/1s"
+    }
+  ],
+  "frame_rate": "30",
+  "output_duration": "5/1s",
+  "removed_duration": "2/1s",
+  "source": "/media/input.mp4",
+  "source_duration": "7/1s",
+  "threshold_dbfs": -35.0,
+  "version": 1
+}

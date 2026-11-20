@@ -8,8 +8,8 @@ Licenciado sob a [Licença MIT](LICENSE). Por Hadagalberto Junior.
 
 ## Status
 
-Os marcos 1 (fundação) e 2 (análise) estão implementados. A renderização e os
-exportadores de timeline virão em marcos posteriores.
+Os marcos 1 (fundação), 2 (análise) e 3 (saídas) estão implementados.
+Renderização, pré-visualização e todos os exportadores de timeline disponíveis.
 
 ## Estrutura
 
@@ -51,6 +51,24 @@ cargo run -p jumpcut -- timecode 1800 --rate 29.97 --drop-frame
 cargo run -p jumpcut -- analyze input.mp4 --threshold=-35dB
 cargo run -p jumpcut -- analyze input.mp4 --auto --margin 0.08s,0.15s
 cargo run -p jumpcut -- analyze input.mp4 --silent-speed 4 --json
+
+# Renderiza com ffmpeg (padrão: libx264 -crf 18, aac 192k).
+cargo run -p jumpcut -- input.mp4 -o corte.mp4
+cargo run -p jumpcut -- input.mp4 -o corte.mp4 --hw-encoder h264_nvenc
+
+# Copia os codecs em keyframes (avisa sobre imprecisão).
+cargo run -p jumpcut -- input.mp4 -o corte.mp4 --copy
+
+# Mostra um resumo no terminal com sparkline de loudness, sem renderizar.
+cargo run -p jumpcut -- input.mp4 --preview
+
+# Escreve uma timeline na stdout, ou em arquivo com -o.
+cargo run -p jumpcut -- input.mp4 --export fcpxml -o corte.fcpxml
+cargo run -p jumpcut -- input.mp4 --export premiere
+cargo run -p jumpcut -- input.mp4 --export edl --drop-frame
+cargo run -p jumpcut -- input.mp4 --export otio
+cargo run -p jumpcut -- input.mp4 --export concat
+cargo run -p jumpcut -- input.mp4 --export json
 ```
 
 Valores negativos em dB exigem `--threshold=-35dB` para que o clap não interprete
@@ -67,3 +85,9 @@ o sinal de menos como uma nova flag.
 - `analysis`: frames RMS/pico em dBFS, limiar absoluto ou adaptativo (documentado),
   histerese, margens, fusão de lacunas, snap exato a frames e aceleração de
   silêncios (`--auto` usa o ponto médio dos percentis 10 e 90).
+- `render`: escolhe um grafo `filter_complex` para planos pequenos (e qualquer
+  aceleração de silêncio) ou uma concatenação via concat demuxer para planos
+  grandes; suporta `--copy` com aviso de imprecisão e passthrough de encoder.
+- `export`: FCPXML 1.10, xmeml v4 do Premiere, EDL CMX3600 (drop-frame), OTIO
+  JSON, listas de concatenação ffmpeg e JSON legível por máquina.
+- `preview`: resumo no terminal com sparkline ASCII de loudness.
